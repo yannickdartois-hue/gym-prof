@@ -10,7 +10,7 @@
 'use strict';
 const RAFALE={n:4,min:10};
 function bareme(){const B=DB.bareme||{};return {val:(B.val&&B.val.length===6)?B.val.slice():[1,2,3,4,5,6],nat:B.nat||6,cible:B.cible||8}}
-const fmt=x=>(Math.round(x*10)/10).toString().replace('.',',');
+const fmt=x=>x==null?'Disp.':(Math.round(x*10)/10).toString().replace('.',',');
 const niveauDe=k=>{const a=GYM.ateliers.find(x=>x.n===+k[0]);return a&&a.niv.find(n=>n.n===k[1])};
 function nomPiece(p){if(p[0]==='L'){const f=GYM.fiches[p.slice(1)];return f?'liaison « '+f.t+' »':'liaison'}const n=niveauDe(p);return n?n.nom+' ('+p[1]+')':p}
 // Observations faites par cet élève pour ses camarades (E où il est noté comme observateur)
@@ -18,10 +18,14 @@ function nomPiece(p){if(p[0]==='L'){const f=GYM.fiches[p.slice(1)];return f?'lia
 // L'observateur arrive en nom complet (anciennes fiches : prénom seul).
 function observations(E,c){const nc=norm(E.nom),p=norm(prenom(E.nom));let n=0;elevesClasse(c).forEach(x=>{if(x.E===E)return;Object.values(x.E.v).forEach(v=>{if(v.e&&v.p&&!v.pp&&v.par&&(norm(v.par)===nc||norm(v.par)===p))n++})});return n}
 function partAuto(obs){const B=bareme();return Math.min(4,Math.round(obs/B.cible*4*2)/2)}
+/* Statut (fiche élève) : E.st = '' apte · 'ip' inapte partiel (E.excl = ateliers non évalués) · 'disp' dispensé du cycle (pas de note). */
+const ateliersNotes=E=>E.st==='ip'?GYM.ateliers.filter(a=>!(E.excl||[]).includes(a.n)):GYM.ateliers;
 function note(E,c){
-  const B=bareme(),max=B.val[5]||1;
-  const pts=GYM.ateliers.map(a=>{const p=meilleur(E,a.n,'p');return p?B.val[NIVS.indexOf(p)]:0}).sort((x,y)=>y-x).slice(0,B.nat);
-  const items=Math.min(16,16*pts.reduce((s,x)=>s+x,0)/(B.nat*max));
+  const B=bareme(),max=B.val[5]||1,AT=ateliersNotes(E);
+  if(E.st==='disp'||!AT.length)return {items:null,part:null,partAuto:false,total:null,disp:true};
+  const nat=Math.min(B.nat,AT.length);
+  const pts=AT.map(a=>{const p=meilleur(E,a.n,'p');return p?B.val[NIVS.indexOf(p)]:0}).sort((x,y)=>y-x).slice(0,nat);
+  const items=Math.min(16,16*pts.reduce((s,x)=>s+x,0)/(nat*max));
   const auto=E.part==null,part=auto?partAuto(observations(E,c)):E.part;
   return {items,part,partAuto:auto,total:items+part};
 }
@@ -90,7 +94,7 @@ function courbe(E,c){
 
 /* ---------- Notes pour Pronote : une note par ligne, dans l'ordre alphabétique de la classe ---------- */
 async function notesPronote(){
-  const c=DB.classe,L=elevesClasse(c),arr=x=>(Math.round(x*2)/2).toString().replace('.',',');
+  const c=DB.classe,L=elevesClasse(c),arr=x=>x==null?'Disp':(Math.round(x*2)/2).toString().replace('.',',');
   const txt=L.map(x=>arr(note(x.E,c).total)).join('\n');
   let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch(e){}
   const d=document.createElement('div');d.className='voile';

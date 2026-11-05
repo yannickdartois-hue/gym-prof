@@ -27,6 +27,7 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 {t:'Note sur 20',html:`<ul>
 <li><b>Items /16</b> : par atelier, le meilleur niveau validé P (A = 1 … F = 6 par défaut), meilleurs ateliers retenus, ramené sur 16. Réglable dans <b>Réglages → Barème</b>.</li>
 <li><b>Participation /4</b> : proposée d’après les <b>observations justes</b> de l’élève (ses E confirmés ensuite par votre P). Modifiable dans sa fiche (0 à 4, ou Auto). * = proposée par l’appli.</li>
+<li><b>Élève dispensé ou inapte</b> : dans sa fiche, <span class="bouton">Inapte partiel</span> puis cochez les ateliers non évalués (la note /16 se calcule sur les autres), ou <span class="bouton">Dispensé du cycle</span> : pas de note, « Disp » dans l’export et pour Pronote.</li>
 <li>Fiche élève : note, quiz sécurité, objectif, enchaînement, <b>courbe de progression</b>, P à valider ou retirer d’un toucher.</li>
 <li><span class="bouton">⬇ Export CSV</span>, <span class="bouton">📋 Notes pour Pronote</span> (une note par ligne, ordre NOM Prénom, à coller dans la colonne du devoir), <span class="bouton">🖨 Imprimer</span>.</li>
 </ul>`},

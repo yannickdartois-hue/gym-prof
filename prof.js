@@ -155,7 +155,7 @@ function vTableau(){
   ${basculeVue()}
   <div class="rangee"><button class="bt mini" type="button" data-act="qrclasse">▦ QR de la classe</button><button class="bt mini" type="button" data-act="rotation">🔄 Rotation des ateliers</button><button class="bt mini" type="button" data-act="csv">⬇ Export CSV (note)</button><button class="bt mini" type="button" data-act="pronote">📋 Notes pour Pronote</button><button class="bt mini" type="button" data-act="imprimer">🖨 Imprimer</button></div>
   <div style="overflow-x:auto;margin-top:10px"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}" style="box-shadow:inset 0 -8px 0 ${COUL[a.n]}">${a.n}<br><span class="small">${esc(a.court)}</span></th>`).join('')}<th>Items<br><span class="small">/16</span></th><th>Part.<br><span class="small">/4</span></th><th>Note<br><span class="small">/20</span></th></tr></thead>
-  <tbody>${L.map(x=>{const N=note(x.E,DB.classe);return `<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left"><b>${esc(x.nom)}</b>${rafale(x.E)?' <span title="Plusieurs validations E en quelques minutes : à vérifier">⚡</span>':''}${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td>${fmt(N.items)}</td><td>${fmt(N.part)}${N.partAuto?'<sup title="proposée par l’appli">*</sup>':''}</td><td><b>${fmt(N.total)}</b></td></tr>`}).join('')}</tbody></table></div>
+  <tbody>${L.map(x=>{const N=note(x.E,DB.classe);return `<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left"><b>${esc(x.nom)}</b>${rafale(x.E)?' <span title="Plusieurs validations E en quelques minutes : à vérifier">⚡</span>':''}${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.st==='disp'?' <span class="small muted">(dispensé)</span>':x.E.st==='ip'?' <span class="small muted">(inapte partiel)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td>${fmt(N.items)}</td><td>${fmt(N.part)}${N.partAuto?'<sup title="proposée par l’appli">*</sup>':''}</td><td><b>${fmt(N.total)}</b></td></tr>`}).join('')}</tbody></table></div>
   <p class="small muted">⚡ = au moins ${RAFALE.n} validations E en moins de ${RAFALE.min} min : allez voir. * = participation proposée par l’appli (observations justes : E confirmés ensuite par votre P), à confirmer dans la fiche de l’élève. Barème : onglet Réglages.</p>`;
 }
 function vEleve(k){
@@ -165,6 +165,9 @@ function vEleve(k){
   return `<button class="retour" type="button" data-act="eleve" data-v="">‹ Classe</button><h2>${esc(E.nom)}</h2><p class="small muted">${esc(E.classe)} · touchez une case pour valider ou retirer P (validation professeur).</p>
   <section class="carte note-carte"><div class="rangee" style="justify-content:space-between"><b style="font:800 30px var(--d)">${fmt(N.total)} / 20</b><span>Items ${fmt(N.items)}/16 · Participation ${fmt(N.part)}/4</span></div>
    ${rafale(E)?`<p class="alerte">⚡ ${RAFALE.n} validations E ou plus en moins de ${RAFALE.min} min (${esc(rafale(E))}) : à vérifier.</p>`:''}
+   <div style="margin:10px 0"><span class="small"><b>Statut</b></span><div class="rangee">${[['','Apte'],['ip','Inapte partiel'],['disp','Dispensé du cycle']].map(([s,l])=>`<button type="button" class="bt mini ${(E.st||'')===s?'act':''}" data-act="statut" data-v="${s}" data-e="${esc(k)}">${l}</button>`).join('')}</div>
+   ${E.st==='ip'?`<p class="small muted">Ateliers <b>non évalués</b> (certificat d’inaptitude partielle). La note sur 16 se calcule sur les autres ateliers ; la participation compte comme d’habitude (observer, parer, conseiller).</p><div class="rangee">${GYM.ateliers.map(a=>`<label class="coche" style="margin:0"><input type="checkbox" data-excl="${a.n}" data-e="${esc(k)}" ${(E.excl||[]).includes(a.n)?'checked':''}> ${a.n} · ${esc(a.court)}</label>`).join('')}</div>`:''}
+   ${E.st==='disp'?'<p class="small muted">Pas de note : « Disp » dans l’export CSV et dans les notes pour Pronote.</p>':''}</div>
    <label class="small"><b>Participation /4</b> — observations justes (E confirmés par votre P) : <b>${obs}</b> (l’appli propose ${fmt(partAuto(obs))})</label>
    <div class="rangee">${[0,1,2,3,4].map(p=>`<button type="button" class="bt mini ${E.part===p?'act':''}" data-act="part" data-v="${p}" data-e="${esc(k)}">${p}</button>`).join('')}<button type="button" class="bt mini ${E.part==null?'act':''}" data-act="part" data-v="" data-e="${esc(k)}">Auto</button></div>
    ${E.obj?`<p class="small">🎯 Dernier objectif du jour (${dateFr(E.obj.t)}) : <b>atelier ${E.obj.k[0]} niveau ${E.obj.k[1]}</b> · ${esc((niveauDe(E.obj.k)||{}).nom||'')}</p>`:''}
@@ -212,8 +215,8 @@ function vClasses(){
 function exportCSV(){
   const c=DB.classe,L=elevesClasse(c);
   const lignes=[['Nom','Classe',...GYM.ateliers.flatMap(a=>['A'+a.n+' '+a.court+' (P)','A'+a.n+' (E)']),'Nb niveaux P','Items /16','Participation /4','Note /20','Observations','À vérifier']];
-  const v2=n=>String(n).replace('.',',');
-  L.forEach(x=>{const N=note(x.E,c);lignes.push([x.nom,c,...GYM.ateliers.flatMap(a=>[meilleur(x.E,a.n,'p'),meilleur(x.E,a.n,'e')]),Object.values(x.E.v).filter(v=>v.p).length,v2(N.items),v2(N.part)+(N.partAuto?' (auto)':''),v2(N.total),observations(x.E,c),rafale(x.E)?'rafale de E':''])});
+  const v2=n=>n==null?'Disp':String(n).replace('.',',');
+  L.forEach(x=>{const N=note(x.E,c);lignes.push([x.nom,c,...GYM.ateliers.flatMap(a=>[meilleur(x.E,a.n,'p'),meilleur(x.E,a.n,'e')]),Object.values(x.E.v).filter(v=>v.p).length,v2(N.items),v2(N.part)+(N.partAuto?' (auto)':''),v2(N.total),observations(x.E,c),[rafale(x.E)?'rafale de E':'',x.E.st==='ip'?'inapte partiel (ateliers '+(x.E.excl||[]).join(', ')+' non évalués)':x.E.st==='disp'?'dispensé':''].filter(Boolean).join(' · ')])});
   const txt='﻿'+lignes.map(r=>r.map(v=>/[;"\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':v).join(';')).join('\r\n');
   telecharger('gym_'+c+'_niveaux.csv',txt,'text/csv');
 }
@@ -241,6 +244,7 @@ document.addEventListener('click',async ev=>{
     case 'imprimer':window.print();break;
     case 'tour':DB.tourAt=+v;sauver();rendre();break;
     case 'vueat':DB.vueAt=+v||0;sauver();rendre();break;
+    case 'statut':{const E=DB.el[b.dataset.e];if(!E)return;if(v)E.st=v;else{delete E.st;delete E.excl}sauver();rendre();break}
     case 'part':{const E=DB.el[b.dataset.e];if(!E)return;if(v==='')delete E.part;else E.part=+v;sauver();rendre();break}
     case 'bilanj':DB.bilanJ=+v;rendre();break;
     case 'pin':{const a=prompt('Nouveau code de validation (4 à 8 chiffres) :');if(a==null)return;if(!/^\d{4,8}$/.test(a)){alert('4 à 8 chiffres.');return}
@@ -260,6 +264,7 @@ document.addEventListener('change',async ev=>{
   else if(t.dataset.bar){const B=bareme();if(t.dataset.bar==='nat')B.nat=Math.max(1,Math.min(6,+t.value||6));else if(t.dataset.bar==='cible')B.cible=Math.max(1,+t.value||8);else B.val[+t.dataset.bar]=Math.max(0,+String(t.value).replace(',','.')||0);DB.bareme=B;sauver();rendre()}
   else if(t.id==='bilan-date'){DB.bilanJ=t.value?new Date(t.value+'T12:00').getTime():0;rendre()}
   else if(t.dataset.lien){DB.classes[t.dataset.lien].lien=t.value.trim();sauver()}
+  else if(t.dataset.excl){const E=DB.el[t.dataset.e];if(E){const n=+t.dataset.excl,s=new Set(E.excl||[]);t.checked?s.add(n):s.delete(n);E.excl=[...s].sort();sauver();rendre()}}
   else if(t.dataset.tc){DB.classes[t.dataset.tc].tc=t.checked;sauver();alert('Refaites scanner le QR de la classe pour que les téléphones le prennent en compte.')}
   else if(t.dataset.barres){DB.classes[t.dataset.barres].barres=t.checked;sauver();alert('Refaites scanner le QR de la classe pour que les tablettes le prennent en compte.')}
 });
