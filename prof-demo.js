@@ -21,7 +21,7 @@ async function construireDemo(){
     const k=norm(DEMO_CL)+'|'+norm(nom),E={nom,classe:DEMO_CL,v:{},maj:J(ent(0,6))};
     const force=r(); // aisance générale de l'élève
     // groupes de 3 : l'observateur est un camarade du même groupe
-    const g=Math.floor(i/3)*3,obs=prenom(DEMO_ELEVES[g+((i-g+1)%3)]||DEMO_ELEVES[g]);
+    const g=Math.floor(i/3)*3,obs=DEMO_ELEVES[g+((i-g+1)%3)]||DEMO_ELEVES[g];
     GYM.ateliers.forEach(a=>{
       const p=Math.max(-1,Math.min(5,Math.round(force*4+r()*2-1.5)));   // dernier niveau P (-1 = aucun)
       const e=Math.min(5,p+(r()<.1?1:0));                                // parfois un niveau de plus validé E seulement

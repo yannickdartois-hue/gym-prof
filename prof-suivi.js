@@ -15,7 +15,8 @@ const niveauDe=k=>{const a=GYM.ateliers.find(x=>x.n===+k[0]);return a&&a.niv.fin
 function nomPiece(p){if(p[0]==='L'){const f=GYM.fiches[p.slice(1)];return f?'liaison « '+f.t+' »':'liaison'}const n=niveauDe(p);return n?n.nom+' ('+p[1]+')':p}
 // Observations faites par cet élève pour ses camarades (E où il est noté comme observateur)
 // Seules comptent les observations confirmées ensuite par une validation P du professeur : valider n'importe quoi ne rapporte rien.
-function observations(E,c){const p=norm(prenom(E.nom));let n=0;elevesClasse(c).forEach(x=>{if(x.E===E)return;Object.values(x.E.v).forEach(v=>{if(v.e&&v.p&&!v.pp&&v.par&&norm(v.par)===p)n++})});return n}
+// L'observateur arrive en nom complet (anciennes fiches : prénom seul).
+function observations(E,c){const nc=norm(E.nom),p=norm(prenom(E.nom));let n=0;elevesClasse(c).forEach(x=>{if(x.E===E)return;Object.values(x.E.v).forEach(v=>{if(v.e&&v.p&&!v.pp&&v.par&&(norm(v.par)===nc||norm(v.par)===p))n++})});return n}
 function partAuto(obs){const B=bareme();return Math.min(4,Math.round(obs/B.cible*4*2)/2)}
 function note(E,c){
   const B=bareme(),max=B.val[5]||1;
