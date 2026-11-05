@@ -42,6 +42,8 @@ function importerObjet(o,source){
       if(ch==='d')v.deb=1;
       if(v.e||v.p||v.deb){E.v[k]=v}
     }));
+    if(x.o)E.obj={k:x.o,t:o.ts*1000};
+    if(x.en)E.ench=x.en;
     E.maj=Math.max(E.maj,o.ts*1000);n++;
   });
   DB.recus[(o.g||'')+'|'+o.ts]=1;
@@ -112,13 +114,17 @@ async function importerListe(files,texte,classeDefaut){
   journal('Listes importées : '+C.map(c=>c+' ('+tout[c].size+')').join(', '));
   DB.classe=C[0];DB.vue='tableau';sauver();rendre();
 }
+function chaineEleve(E){return GYM.ateliers.map(a=>NIVS.map(n=>{const v=E.v[a.n+n]||{};return v.p?'p':v.e?'e':v.deb?'d':'0'}).join('')).join('')}
 async function empreinte(code){const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('gym-prof|'+code));return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24)}
 async function qrDemarrage(c){
   if(!DB.pin){alert('Choisissez d’abord votre code de validation (Réglages).');DB.vue='classes';rendre();return}
-  const L=DB.classes[c],txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',k:DB.pin,b:L.barres?1:0});
+  const L=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};
+  // validations connues par élève (6 ateliers × 6 niveaux : 0, e, p, d) — seules les lignes non vides
+  const pv={};elevesClasse(c).forEach(x=>{const ch=chaineEleve(x.E);if(/[epd]/.test(ch))pv[x.nom]=ch});
+  const txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',k:DB.pin,b:L.barres?1:0,pv,ts:Math.round(Date.now()/1000)});
   let svg;try{svg=GQR.svgQR(txt)}catch(e){svg='<p class="alerte">Liste trop longue pour un seul QR.</p>'}
   const d=document.createElement('div');d.className='voile';
-  d.innerHTML=`<div class="fen" style="max-width:640px"><h2>Classe ${esc(c)} · gymnastique</h2><p>Appli élève : « QR de la classe (prof) », ou Groupe → « Scanner le QR de la classe ».</p><div class="qrbox">${svg}</div><button class="bt noir" type="button" style="margin-top:12px">Fermer</button></div>`;
+  d.innerHTML=`<div class="fen" style="max-width:640px"><h2>Classe ${esc(c)} · gymnastique</h2><p>Appli élève : « QR de la classe (prof) », ou Groupe → « Scanner le QR de la classe ».</p><p class="small muted">Le QR contient aussi vos validations P : elles s’ajoutent sur les tablettes, et un groupe qui a oublié son code retrouve ses niveaux en recréant son carnet avec la liste de la classe.</p><div class="qrbox">${svg}</div><button class="bt noir" type="button" style="margin-top:12px">Fermer</button></div>`;
   d.querySelector('button').onclick=()=>d.remove();document.body.appendChild(d);
 }
 
@@ -136,7 +142,7 @@ function rendre(){
   $('#onglets').innerHTML=T.map(([k,i,l])=>`<button type="button" class="${DB.vue===k?'ici':''}" data-act="vue" data-v="${k}"><i>${i}</i>${l}${k==='valider'&&nbAValider()?' ('+nbAValider()+')':''}</button>`).join('');
   $('#sous').textContent=DB.classe?'Classe '+DB.classe:'Lycée Georges Pompidou';
   const sel=C.length?`<div class="qui">${C.map(c=>`<button type="button" class="${c===DB.classe?'ici':''}" data-act="classe" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>`:'';
-  $('#app').innerHTML=bandeauDemo()+(DB.eleve&&DB.vue==='tableau'?vEleve(DB.eleve):{tableau:()=>sel+vTableau(),valider:()=>sel+vValider(),recevoir:vRecevoir,classes:vClasses}[DB.vue]());
+  $('#app').innerHTML=bandeauDemo()+(DB.eleve&&DB.vue==='tableau'?vEleve(DB.eleve):{tableau:()=>sel+(DB.vueAt?vParAtelier():vTableau()),valider:()=>sel+vValider(),recevoir:()=>sel+vRecevoir(),classes:vClasses}[DB.vue]());
 }
 function cellule(E,a){const p=meilleur(E,a,'p'),e=meilleur(E,a,'e');
   return `<td>${p?`<span class="L L${p}" style="width:36px;height:36px;font-size:20px">${p}</span>`:'<span class="muted">–</span>'}${e&&e!==p?`<span class="eseul" title="validé E par un camarade, à confirmer"><span class="L L${e}">${e}</span><small>E</small></span>`:''}</td>`}
@@ -145,14 +151,24 @@ function vTableau(){
   const L=elevesClasse(DB.classe);
   return `<h2>Classe ${esc(DB.classe)}</h2>
   <p class="small muted">Lettre = meilleur niveau validé <b>P</b> par atelier · petite lettre en pointillés = niveau plus haut validé seulement <b>E</b> par un camarade (à confirmer). Touchez un élève pour sa fiche.</p>
+  ${basculeVue()}
   <div class="rangee"><button class="bt mini" type="button" data-act="qrclasse">▦ QR de la classe</button><button class="bt mini" type="button" data-act="csv">⬇ Export CSV (note)</button></div>
-  <div style="overflow-x:auto;margin-top:10px"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}" style="box-shadow:inset 0 -8px 0 ${COUL[a.n]}">${a.n}<br><span class="small">${esc(a.court)}</span></th>`).join('')}<th>P</th></tr></thead>
-  <tbody>${L.map(x=>`<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left"><b>${esc(x.nom)}</b>${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td><b>${Object.values(x.E.v).filter(v=>v.p).length}</b></td></tr>`).join('')}</tbody></table></div>`;
+  <div style="overflow-x:auto;margin-top:10px"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}" style="box-shadow:inset 0 -8px 0 ${COUL[a.n]}">${a.n}<br><span class="small">${esc(a.court)}</span></th>`).join('')}<th>Items<br><span class="small">/16</span></th><th>Part.<br><span class="small">/4</span></th><th>Note<br><span class="small">/20</span></th></tr></thead>
+  <tbody>${L.map(x=>{const N=note(x.E,DB.classe);return `<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left"><b>${esc(x.nom)}</b>${rafale(x.E)?' <span title="Plusieurs validations E en quelques minutes : à vérifier">⚡</span>':''}${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td>${fmt(N.items)}</td><td>${fmt(N.part)}${N.partAuto?'<sup title="proposée par l’appli">*</sup>':''}</td><td><b>${fmt(N.total)}</b></td></tr>`}).join('')}</tbody></table></div>
+  <p class="small muted">⚡ = au moins ${RAFALE.n} validations E en moins de ${RAFALE.min} min : allez voir. * = participation proposée par l’appli (nombre d’observations faites pour les camarades), à confirmer dans la fiche de l’élève. Barème : onglet Réglages.</p>`;
 }
 function vEleve(k){
   const E=DB.el[k]||(()=>{const [c]=k.split('|');const x=elevesClasse(DB.classe).find(y=>y.k===k);return x?eleve(x.E.classe||DB.classe,x.nom):null})();
   if(!E){DB.eleve=null;return vTableau()}
+  const N=note(E,E.classe||DB.classe),obs=observations(E,E.classe||DB.classe);
   return `<button class="retour" type="button" data-act="eleve" data-v="">‹ Classe</button><h2>${esc(E.nom)}</h2><p class="small muted">${esc(E.classe)} · touchez une case pour valider ou retirer P (validation professeur).</p>
+  <section class="carte note-carte"><div class="rangee" style="justify-content:space-between"><b style="font:800 30px var(--d)">${fmt(N.total)} / 20</b><span>Items ${fmt(N.items)}/16 · Participation ${fmt(N.part)}/4</span></div>
+   ${rafale(E)?`<p class="alerte">⚡ ${RAFALE.n} validations E ou plus en moins de ${RAFALE.min} min (${esc(rafale(E))}) : à vérifier.</p>`:''}
+   <label class="small"><b>Participation /4</b> — observations faites pour les camarades : <b>${obs}</b> (l’appli propose ${fmt(partAuto(obs))})</label>
+   <div class="rangee">${[0,1,2,3,4].map(p=>`<button type="button" class="bt mini ${E.part===p?'act':''}" data-act="part" data-v="${p}" data-e="${esc(k)}">${p}</button>`).join('')}<button type="button" class="bt mini ${E.part==null?'act':''}" data-act="part" data-v="" data-e="${esc(k)}">Auto</button></div>
+   ${E.obj?`<p class="small">🎯 Dernier objectif du jour (${dateFr(E.obj.t)}) : <b>atelier ${E.obj.k[0]} niveau ${E.obj.k[1]}</b> · ${esc((niveauDe(E.obj.k)||{}).nom||'')}</p>`:''}
+   ${E.ench&&E.ench.length?`<p class="small">🧩 Enchaînement : ${E.ench.map(p=>esc(nomPiece(p))).join(' → ')}</p>`:''}
+  </section>
   ${GYM.ateliers.map(a=>`<section class="atelier" ${st(a.n)}><header><span class="n">${a.n}</span><b>${esc(a.nom)}</b></header>
    ${a.niv.map(n=>{const kk=a.n+n.n,v=E.v[kk]||{},s=etat(E,kk);return `<div class="niv" style="cursor:default"><span class="L L${n.n}">${n.n}</span><span><span class="nom">${esc(n.nom)}</span><div class="crit">${v.e?'E '+dateFr(v.e)+(v.par?' par '+esc(v.par):''):''}${v.p?' · P '+dateFr(v.p):''}${v.deb?' · ouvert par le prof':''}</div></span>
      <span class="ep"><span class="${s?'e v':''}">E</span><button class="bt mini ${s==='p'?'ok':''}" type="button" data-act="togP" data-v="${kk}" data-e="${esc(k)}" style="min-width:56px">${s==='p'?'P ✔':'P'}</button></span></div>`}).join('')}</section>`).join('')}`;
@@ -161,14 +177,16 @@ function aValider(c){const out=[];elevesClasse(c).forEach(x=>Object.entries(x.E.
 function nbAValider(){return DB.classe?aValider(DB.classe).length:0}
 function vValider(){
   if(!DB.classe)return '<p class="carte">Aucune classe.</p>';
-  const L=aValider(DB.classe);
-  return `<h2>À valider (P)</h2><p class="small muted">Niveaux cochés E par un camarade, pas encore validés par vous. Regardez l’élève passer, puis validez ici ou sur sa tablette avec votre code.</p>
-  ${L.length?GYM.ateliers.map(a=>{const M=L.filter(y=>+y.k[0]===a.n);return M.length?`<section class="atelier" ${st(a.n)}><header><span class="n">${a.n}</span><b>${esc(a.nom)}</b></header>${M.map(y=>{const n=a.niv.find(z=>z.n===y.k[1]);return `<div class="niv" style="cursor:default"><span class="L L${y.k[1]}">${y.k[1]}</span><span><span class="nom">${esc(y.x.nom)}</span><div class="crit">${esc(n.nom)} · E ${dateFr(y.v.e)}${y.v.par?' par '+esc(y.v.par):''}${n.prof?' · ⚠️ présence prof':''}</div></span><span class="ep"><button class="bt mini ok" type="button" data-act="togP" data-v="${y.k}" data-e="${esc(y.x.k)}">Valider P</button></span></div>`}).join('')}</section>`:''}).join(''):'<p class="carte">Rien en attente.</p>'}`;
+  const T=aValider(DB.classe),f=DB.tourAt||0,L=f?T.filter(y=>+y.k[0]===f):T;
+  return `<h2>À valider (P)</h2><p class="small muted">Niveaux cochés E par un camarade, pas encore validés par vous. Tour de gymnase : choisissez l’atelier où vous êtes, regardez l’élève passer, validez d’un toucher.</p>
+  <div class="qui">${[0,...GYM.ateliers.map(a=>a.n)].map(n=>`<button type="button" class="${f===n?'ici':''}" ${n?st(n):''} data-act="tour" data-v="${n}">${n?n+' · '+esc(GYM.ateliers[n-1].court):'Tous'} (${n?T.filter(y=>+y.k[0]===n).length:T.length})</button>`).join('')}</div>
+  ${L.length?GYM.ateliers.map(a=>{const M=L.filter(y=>+y.k[0]===a.n);return M.length?`<section class="atelier" ${st(a.n)}><header><span class="n">${a.n}</span><b>${esc(a.nom)}</b></header>${M.map(y=>{const n=a.niv.find(z=>z.n===y.k[1]);return `<div class="niv" style="cursor:default"><span class="L L${y.k[1]}">${y.k[1]}</span><span><span class="nom">${esc(y.x.nom)}${rafale(y.x.E)?' ⚡':''}</span><div class="crit">${esc(n.nom)} · E ${dateFr(y.v.e)}${y.v.par?' par '+esc(y.v.par):''}${n.prof?' · ⚠️ présence prof':''}</div></span><span class="ep"><button class="bt mini ok" type="button" data-act="togP" data-v="${y.k}" data-e="${esc(y.x.k)}">Valider P</button></span></div>`}).join('')}</section>`:''}).join(''):'<p class="carte">Rien en attente.</p>'}`;
 }
 function vRecevoir(){
   return `<h2>Recevoir les fiches</h2>
   <section class="carte"><h3>▦ Scanner les QR des tablettes</h3><p class="small muted">Appli élève → Envoyer → « Montrer le QR code ». La caméra reste ouverte : scannez les groupes à la suite.</p><button class="bt act" type="button" data-act="scan">📷 Scanner</button></section>
   <section class="carte"><h3>📄 Fichiers ou dossier du Nuage</h3><p class="small muted">Fichiers .json des groupes, ou le dossier du Nuage téléchargé en .zip.</p><label class="bt" for="fic">Choisir les fichiers</label><input id="fic" type="file" accept=".json,.zip,application/json,application/zip" multiple hidden></section>
+  ${vBilan()}
   <section class="carte"><h3>Journal</h3><div class="small">${DB.journal.slice(0,20).map(esc).join('<br>')||'—'}</div></section>`;
 }
 function vClasses(){
@@ -183,13 +201,15 @@ function vClasses(){
    <label class="small"><b>Lien de dépôt Nuage</b> (facultatif, « Demande de fichier »)</label><input type="text" data-lien="${esc(c)}" value="${esc(L.lien||'')}" placeholder="https://nuage…">
    <label class="coche"><input type="checkbox" data-barres="${esc(c)}" ${L.barres?'checked':''}> Afficher les barres asymétriques aux élèves</label>
    <div class="rangee" style="margin-top:10px"><button class="bt act" type="button" data-act="qrclasse" data-v="${esc(c)}">▦ QR de démarrage</button><button class="bt mini danger" type="button" data-act="suppclasse" data-v="${esc(c)}">Supprimer la classe</button></div></section>`}).join('')}
+  ${vBareme()}
   ${carteDemo()}
   <section class="carte"><h3>Sauvegarde</h3><div class="rangee"><button class="bt" type="button" data-act="sauvegarde">⬇ Télécharger une sauvegarde</button><label class="bt" for="restau">⬆ Restaurer</label><input id="restau" type="file" accept=".json" hidden></div></section>`;
 }
 function exportCSV(){
   const c=DB.classe,L=elevesClasse(c);
-  const lignes=[['Nom','Classe',...GYM.ateliers.flatMap(a=>['A'+a.n+' '+a.court+' (P)','A'+a.n+' (E)']),'Nb niveaux P']];
-  L.forEach(x=>lignes.push([x.nom,c,...GYM.ateliers.flatMap(a=>[meilleur(x.E,a.n,'p'),meilleur(x.E,a.n,'e')]),Object.values(x.E.v).filter(v=>v.p).length]));
+  const lignes=[['Nom','Classe',...GYM.ateliers.flatMap(a=>['A'+a.n+' '+a.court+' (P)','A'+a.n+' (E)']),'Nb niveaux P','Items /16','Participation /4','Note /20','Observations','À vérifier']];
+  const v2=n=>String(n).replace('.',',');
+  L.forEach(x=>{const N=note(x.E,c);lignes.push([x.nom,c,...GYM.ateliers.flatMap(a=>[meilleur(x.E,a.n,'p'),meilleur(x.E,a.n,'e')]),Object.values(x.E.v).filter(v=>v.p).length,v2(N.items),v2(N.part)+(N.partAuto?' (auto)':''),v2(N.total),observations(x.E,c),rafale(x.E)?'rafale de E':''])});
   const txt='﻿'+lignes.map(r=>r.map(v=>/[;"\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':v).join(';')).join('\r\n');
   telecharger('gym_'+c+'_niveaux.csv',txt,'text/csv');
 }
@@ -208,6 +228,10 @@ document.addEventListener('click',async ev=>{
     case 'scan':GQR.scanner(async t=>{const r=importerObjet(await GQR.decoder(t),'QR');rendre();return r},{continu:true,titre:'Fiches des groupes',aide:'Scannez les QR des tablettes les uns après les autres.'});break;
     case 'qrclasse':qrDemarrage(v||DB.classe);break;
     case 'csv':exportCSV();break;
+    case 'tour':DB.tourAt=+v;sauver();rendre();break;
+    case 'vueat':DB.vueAt=+v||0;sauver();rendre();break;
+    case 'part':{const E=DB.el[b.dataset.e];if(!E)return;if(v==='')delete E.part;else E.part=+v;sauver();rendre();break}
+    case 'bilanj':DB.bilanJ=+v;rendre();break;
     case 'pin':{const a=prompt('Nouveau code de validation (4 à 8 chiffres) :');if(a==null)return;if(!/^\d{4,8}$/.test(a)){alert('4 à 8 chiffres.');return}
       if(prompt('Retapez le code :')!==a){alert('Les deux codes sont différents.');return}DB.pin=await empreinte(a);sauver();rendre();alert('Code enregistré. Refaites scanner le QR de la classe sur les tablettes.');break}
     case 'suppclasse':if(confirm('Supprimer la liste de la classe '+v+' ? (les niveaux reçus restent)')){delete DB.classes[v];sauver();rendre()}break;
@@ -222,6 +246,8 @@ document.addEventListener('change',async ev=>{
   else if(t.id==='cl-fic'&&t.files.length){await importerListe([...t.files],'',($('#cl-nom').value||'').trim());t.value=''}
   else if(t.id==='restau'&&t.files[0]&&DEMO){alert('Quittez la démo avant de restaurer.');t.value=''}
   else if(t.id==='restau'&&t.files[0]){try{const o=JSON.parse(await t.files[0].text());if(!o.el)throw 0;if(confirm('Remplacer les données de cet appareil par la sauvegarde ?')){DB=Object.assign(vide(),o);sauver();rendre()}}catch(e){alert('Fichier de sauvegarde non reconnu.')}}
+  else if(t.dataset.bar){const B=bareme();if(t.dataset.bar==='nat')B.nat=Math.max(1,Math.min(6,+t.value||6));else if(t.dataset.bar==='cible')B.cible=Math.max(1,+t.value||8);else B.val[+t.dataset.bar]=Math.max(0,+String(t.value).replace(',','.')||0);DB.bareme=B;sauver();rendre()}
+  else if(t.id==='bilan-date'){DB.bilanJ=t.value?new Date(t.value+'T12:00').getTime():0;rendre()}
   else if(t.dataset.lien){DB.classes[t.dataset.lien].lien=t.value.trim();sauver()}
   else if(t.dataset.barres){DB.classes[t.dataset.barres].barres=t.checked;sauver();alert('Refaites scanner le QR de la classe pour que les tablettes le prennent en compte.')}
 });

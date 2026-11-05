@@ -11,6 +11,8 @@ const DEMO_CL='DÉMO';
 const DEMO_ELEVES=['Lucas ARNAUD','Emma BENOIT','Hugo BLANC','Léa BRUN','Nathan CARON','Inès CHEVALIER','Tom DUBOIS','Zoé DURAND','Sacha FAURE','Chloé FONTAINE',
   'Enzo GARNIER','Manon GIRARD','Noah GUERIN','Lina HENRY','Théo LAMBERT','Jade LEROY','Louis MARTIN','Rose MERCIER','Adam MOREL','Lou PETIT','Gabriel ROUX','Alice SIMON','Jules VINCENT','Mila ROBIN'];
 function alea(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+// niveau suivant à travailler sur un atelier
+function meilleurDemo(E,a){let i=0;NIVS.forEach((n,x)=>{const v=E.v[a+n];if(v&&v.e)i=Math.min(5,x+1)});return NIVS[i]}
 async function construireDemo(){
   const r=alea(20261105),ent=(a,b)=>a+Math.floor(r()*(b-a+1));
   const d=vide();d.classes[DEMO_CL]={eleves:DEMO_ELEVES.slice(),lien:'',barres:false};d.classe=DEMO_CL;d.vue='tableau';d.pin=await empreinte('0000');
@@ -25,6 +27,9 @@ async function construireDemo(){
       const e=Math.min(5,p+(r()<.1?1:0));                                // parfois un niveau de plus validé E seulement
       NIVS.forEach((n,x)=>{if(x>e)return;const v={e:J(26-x*4+ent(0,2)),par:obs};if(x<=p)v.p=v.e+864e5*ent(0,3);E.v[a.n+n]=v});
     });
+    // objectif du jour (un élève sur deux) et quelques E récents pour le bilan de séance
+    if(i%2===0){const a=ent(1,6),lv=meilleurDemo(E,a);E.obj={k:a+lv,t:Date.now()-ent(5,60)*60000}}
+    if(i%3===0){const a=ent(1,6),lv=meilleurDemo(E,a);if(!E.v[a+lv])E.v[a+lv]={e:Date.now()-ent(10,50)*60000,par:obs}}
     d.el[k]=E;
   });
   d.journal=['Démo · fiches reçues de 8 groupes (QR et Nuage)'];
