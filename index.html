@@ -142,6 +142,8 @@ table.tab th,table.tab td{padding:8px 6px;border-bottom:1px solid var(--trait);t
 table.tab th{background:var(--act);color:#fff;font:800 18px/1.1 var(--d)}
 table.tab tbody tr{cursor:pointer}table.tab tbody tr:hover{background:var(--act-pale)}
 .eseul{display:inline-flex;align-items:center;gap:3px;vertical-align:middle;margin-left:4px}.eseul .L{width:28px;height:28px;font-size:16px;border-radius:8px;outline:2px dashed #1c2128;outline-offset:1px}.eseul small{font:800 13px var(--d);color:var(--repere)}
+.demo-bandeau{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;border-radius:12px;background:#fff3c4;color:#5c4300;border:2px dashed #c99a00}
+.demo-bandeau span{flex:1}.demo-carte{border-style:dashed}
 </style>
 <link rel="stylesheet" href="eps-charte-v1.css">
 <style>/* Charte v1 : couleur de la gym (à valider) */ :root{--act:#0f766e;--act-fonce:#0b4f4a;--act-pale:#dff2ef}</style>
@@ -156,6 +158,7 @@ table.tab tbody tr{cursor:pointer}table.tab tbody tr:hover{background:var(--act-
 <script src="qrcode.js"></script>
 <script src="jsqr.js"></script>
 <script src="scan.js"></script>
+<script src="prof-demo.js"></script>
 <script src="prof.js"></script>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
 </body>

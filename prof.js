@@ -18,7 +18,7 @@ const prenom=n=>String(n||'').split(/\s+/)[0];
 function vide(){return {classes:{},el:{},pin:'',vue:'tableau',classe:'',eleve:null,journal:[],recus:{}}}
 function charger(){try{const o=JSON.parse(localStorage.getItem(CLEP));if(o&&o.el)return Object.assign(vide(),o)}catch(e){}return vide()}
 let DB=charger();
-function sauver(){try{localStorage.setItem(CLEP,JSON.stringify(DB))}catch(e){alert('Mémoire pleine : exportez une sauvegarde.')}}
+function sauver(){if(DEMO)return;try{localStorage.setItem(CLEP,JSON.stringify(DB))}catch(e){alert('Mémoire pleine : exportez une sauvegarde.')}}
 const cle=(c,n)=>norm(c)+'|'+norm(n);
 function journal(t){DB.journal.unshift(new Date().toLocaleString('fr-FR')+' · '+t);DB.journal=DB.journal.slice(0,60)}
 function eleve(c,n){const k=cle(c,n);return DB.el[k]||(DB.el[k]={nom:n,classe:c,v:{},maj:0})}
@@ -133,12 +133,12 @@ function rendre(){
   $('#onglets').innerHTML=T.map(([k,i,l])=>`<button type="button" class="${DB.vue===k?'ici':''}" data-act="vue" data-v="${k}"><i>${i}</i>${l}${k==='valider'&&nbAValider()?' ('+nbAValider()+')':''}</button>`).join('');
   $('#sous').textContent=DB.classe?'Classe '+DB.classe:'Lycée Georges Pompidou';
   const sel=C.length?`<div class="qui">${C.map(c=>`<button type="button" class="${c===DB.classe?'ici':''}" data-act="classe" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>`:'';
-  $('#app').innerHTML=DB.eleve&&DB.vue==='tableau'?vEleve(DB.eleve):{tableau:()=>sel+vTableau(),valider:()=>sel+vValider(),recevoir:vRecevoir,classes:vClasses}[DB.vue]();
+  $('#app').innerHTML=bandeauDemo()+(DB.eleve&&DB.vue==='tableau'?vEleve(DB.eleve):{tableau:()=>sel+vTableau(),valider:()=>sel+vValider(),recevoir:vRecevoir,classes:vClasses}[DB.vue]());
 }
 function cellule(E,a){const p=meilleur(E,a,'p'),e=meilleur(E,a,'e');
   return `<td>${p?`<span class="L L${p}" style="width:36px;height:36px;font-size:20px">${p}</span>`:'<span class="muted">–</span>'}${e&&e!==p?`<span class="eseul" title="validé E par un camarade, à confirmer"><span class="L L${e}">${e}</span><small>E</small></span>`:''}</td>`}
 function vTableau(){
-  if(!DB.classe)return `<h2>Bienvenue</h2><p class="carte">Commencez par importer une liste Pronote (onglet Réglages), puis montrez le QR de la classe aux tablettes.</p>`;
+  if(!DB.classe)return `<h2>Bienvenue</h2><p class="carte">Commencez par importer une liste Pronote (onglet Réglages), puis montrez le QR de la classe aux tablettes.</p>${carteDemo()}`;
   const L=elevesClasse(DB.classe);
   return `<h2>Classe ${esc(DB.classe)}</h2>
   <p class="small muted">Lettre = meilleur niveau validé <b>P</b> par atelier · petite lettre en pointillés = niveau plus haut validé seulement <b>E</b> par un camarade (à confirmer). Touchez un élève pour sa fiche.</p>
@@ -180,6 +180,7 @@ function vClasses(){
    <label class="small"><b>Lien de dépôt Nuage</b> (facultatif, « Demande de fichier »)</label><input type="text" data-lien="${esc(c)}" value="${esc(L.lien||'')}" placeholder="https://nuage…">
    <label class="coche"><input type="checkbox" data-barres="${esc(c)}" ${L.barres?'checked':''}> Afficher les barres asymétriques aux élèves</label>
    <div class="rangee" style="margin-top:10px"><button class="bt act" type="button" data-act="qrclasse" data-v="${esc(c)}">▦ QR de démarrage</button><button class="bt mini danger" type="button" data-act="suppclasse" data-v="${esc(c)}">Supprimer la classe</button></div></section>`}).join('')}
+  ${carteDemo()}
   <section class="carte"><h3>Sauvegarde</h3><div class="rangee"><button class="bt" type="button" data-act="sauvegarde">⬇ Télécharger une sauvegarde</button><label class="bt" for="restau">⬆ Restaurer</label><input id="restau" type="file" accept=".json" hidden></div></section>`;
 }
 function exportCSV(){
@@ -207,15 +208,19 @@ document.addEventListener('click',async ev=>{
     case 'pin':{const a=prompt('Nouveau code de validation (4 à 8 chiffres) :');if(a==null)return;if(!/^\d{4,8}$/.test(a)){alert('4 à 8 chiffres.');return}
       if(prompt('Retapez le code :')!==a){alert('Les deux codes sont différents.');return}DB.pin=await empreinte(a);sauver();rendre();alert('Code enregistré. Refaites scanner le QR de la classe sur les tablettes.');break}
     case 'suppclasse':if(confirm('Supprimer la liste de la classe '+v+' ? (les niveaux reçus restent)')){delete DB.classes[v];sauver();rendre()}break;
-    case 'sauvegarde':telecharger('gym-prof_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(DB));break;
+    case 'demo':await ouvrirDemo();break;
+    case 'demofin':quitterDemo();break;
+    case 'sauvegarde':if(DEMO){alert('Démo : pas de sauvegarde.');return}telecharger('gym-prof_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(DB));break;
   }
 });
 document.addEventListener('change',async ev=>{
   const t=ev.target;
   if(t.id==='fic'&&t.files.length){await importerFichiers([...t.files]);t.value=''}
   else if(t.id==='cl-fic'&&t.files.length){await importerListe([...t.files],'',($('#cl-nom').value||'').trim());t.value=''}
+  else if(t.id==='restau'&&t.files[0]&&DEMO){alert('Quittez la démo avant de restaurer.');t.value=''}
   else if(t.id==='restau'&&t.files[0]){try{const o=JSON.parse(await t.files[0].text());if(!o.el)throw 0;if(confirm('Remplacer les données de cet appareil par la sauvegarde ?')){DB=Object.assign(vide(),o);sauver();rendre()}}catch(e){alert('Fichier de sauvegarde non reconnu.')}}
   else if(t.dataset.lien){DB.classes[t.dataset.lien].lien=t.value.trim();sauver()}
   else if(t.dataset.barres){DB.classes[t.dataset.barres].barres=t.checked;sauver();alert('Refaites scanner le QR de la classe pour que les tablettes le prennent en compte.')}
 });
+if(/[?&]demo\b/.test(location.search))ouvrirDemo();
 rendre();
