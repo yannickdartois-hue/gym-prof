@@ -44,6 +44,8 @@ function importerObjet(o,source){
     }));
     if(x.o)E.obj={k:x.o,t:o.ts*1000};
     if(x.en)E.ench=x.en;
+    if(x.x)E.rate=x.x;
+    if(x.qz)E.quiz=1;
     E.maj=Math.max(E.maj,o.ts*1000);n++;
   });
   DB.recus[(o.g||'')+'|'+o.ts]=1;
@@ -152,10 +154,10 @@ function vTableau(){
   return `<h2>Classe ${esc(DB.classe)}</h2>
   <p class="small muted">Lettre = meilleur niveau validé <b>P</b> par atelier · petite lettre en pointillés = niveau plus haut validé seulement <b>E</b> par un camarade (à confirmer). Touchez un élève pour sa fiche.</p>
   ${basculeVue()}
-  <div class="rangee"><button class="bt mini" type="button" data-act="qrclasse">▦ QR de la classe</button><button class="bt mini" type="button" data-act="csv">⬇ Export CSV (note)</button></div>
+  <div class="rangee"><button class="bt mini" type="button" data-act="qrclasse">▦ QR de la classe</button><button class="bt mini" type="button" data-act="rotation">🔄 Rotation des ateliers</button><button class="bt mini" type="button" data-act="csv">⬇ Export CSV (note)</button><button class="bt mini" type="button" data-act="pronote">📋 Notes pour Pronote</button><button class="bt mini" type="button" data-act="imprimer">🖨 Imprimer</button></div>
   <div style="overflow-x:auto;margin-top:10px"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}" style="box-shadow:inset 0 -8px 0 ${COUL[a.n]}">${a.n}<br><span class="small">${esc(a.court)}</span></th>`).join('')}<th>Items<br><span class="small">/16</span></th><th>Part.<br><span class="small">/4</span></th><th>Note<br><span class="small">/20</span></th></tr></thead>
   <tbody>${L.map(x=>{const N=note(x.E,DB.classe);return `<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left"><b>${esc(x.nom)}</b>${rafale(x.E)?' <span title="Plusieurs validations E en quelques minutes : à vérifier">⚡</span>':''}${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td>${fmt(N.items)}</td><td>${fmt(N.part)}${N.partAuto?'<sup title="proposée par l’appli">*</sup>':''}</td><td><b>${fmt(N.total)}</b></td></tr>`}).join('')}</tbody></table></div>
-  <p class="small muted">⚡ = au moins ${RAFALE.n} validations E en moins de ${RAFALE.min} min : allez voir. * = participation proposée par l’appli (nombre d’observations faites pour les camarades), à confirmer dans la fiche de l’élève. Barème : onglet Réglages.</p>`;
+  <p class="small muted">⚡ = au moins ${RAFALE.n} validations E en moins de ${RAFALE.min} min : allez voir. * = participation proposée par l’appli (observations justes : E confirmés ensuite par votre P), à confirmer dans la fiche de l’élève. Barème : onglet Réglages.</p>`;
 }
 function vEleve(k){
   const E=DB.el[k]||(()=>{const [c]=k.split('|');const x=elevesClasse(DB.classe).find(y=>y.k===k);return x?eleve(x.E.classe||DB.classe,x.nom):null})();
@@ -164,10 +166,13 @@ function vEleve(k){
   return `<button class="retour" type="button" data-act="eleve" data-v="">‹ Classe</button><h2>${esc(E.nom)}</h2><p class="small muted">${esc(E.classe)} · touchez une case pour valider ou retirer P (validation professeur).</p>
   <section class="carte note-carte"><div class="rangee" style="justify-content:space-between"><b style="font:800 30px var(--d)">${fmt(N.total)} / 20</b><span>Items ${fmt(N.items)}/16 · Participation ${fmt(N.part)}/4</span></div>
    ${rafale(E)?`<p class="alerte">⚡ ${RAFALE.n} validations E ou plus en moins de ${RAFALE.min} min (${esc(rafale(E))}) : à vérifier.</p>`:''}
-   <label class="small"><b>Participation /4</b> — observations faites pour les camarades : <b>${obs}</b> (l’appli propose ${fmt(partAuto(obs))})</label>
+   <label class="small"><b>Participation /4</b> — observations justes (E confirmés par votre P) : <b>${obs}</b> (l’appli propose ${fmt(partAuto(obs))})</label>
    <div class="rangee">${[0,1,2,3,4].map(p=>`<button type="button" class="bt mini ${E.part===p?'act':''}" data-act="part" data-v="${p}" data-e="${esc(k)}">${p}</button>`).join('')}<button type="button" class="bt mini ${E.part==null?'act':''}" data-act="part" data-v="" data-e="${esc(k)}">Auto</button></div>
    ${E.obj?`<p class="small">🎯 Dernier objectif du jour (${dateFr(E.obj.t)}) : <b>atelier ${E.obj.k[0]} niveau ${E.obj.k[1]}</b> · ${esc((niveauDe(E.obj.k)||{}).nom||'')}</p>`:''}
    ${E.ench&&E.ench.length?`<p class="small">🧩 Enchaînement : ${E.ench.map(p=>esc(nomPiece(p))).join(' → ')}</p>`:''}
+   <p class="small">${E.quiz?'🛡️ Quiz sécurité réussi':'🛡️ Quiz sécurité pas encore réussi (niveaux ⚠️ bloqués sur la tablette)'}</p>
+   ${courbe(E,E.classe||DB.classe)}
+   <div class="rangee"><button class="bt mini" type="button" data-act="imprimer">🖨 Imprimer la fiche</button></div>
   </section>
   ${GYM.ateliers.map(a=>`<section class="atelier" ${st(a.n)}><header><span class="n">${a.n}</span><b>${esc(a.nom)}</b></header>
    ${a.niv.map(n=>{const kk=a.n+n.n,v=E.v[kk]||{},s=etat(E,kk);return `<div class="niv" style="cursor:default"><span class="L L${n.n}">${n.n}</span><span><span class="nom">${esc(n.nom)}</span><div class="crit">${v.e?'E '+dateFr(v.e)+(v.par?' par '+esc(v.par):''):''}${v.p?' · P '+dateFr(v.p):''}${v.deb?' · ouvert par le prof':''}</div></span>
@@ -228,6 +233,11 @@ document.addEventListener('click',async ev=>{
     case 'scan':GQR.scanner(async t=>{const r=importerObjet(await GQR.decoder(t),'QR');rendre();return r},{continu:true,titre:'Fiches des groupes',aide:'Scannez les QR des tablettes les uns après les autres.'});break;
     case 'qrclasse':qrDemarrage(v||DB.classe);break;
     case 'csv':exportCSV();break;
+    case 'rotation':ouvrirRotation();break;
+    case 'rot-go':lancerRotation(+v);break;
+    case 'rot-stop':DB.rotation=null;sauver();fermerRotation();break;
+    case 'pronote':notesPronote();break;
+    case 'imprimer':window.print();break;
     case 'tour':DB.tourAt=+v;sauver();rendre();break;
     case 'vueat':DB.vueAt=+v||0;sauver();rendre();break;
     case 'part':{const E=DB.el[b.dataset.e];if(!E)return;if(v==='')delete E.part;else E.part=+v;sauver();rendre();break}

@@ -144,6 +144,14 @@ table.tab th{background:var(--act);color:#fff;font:800 18px/1.1 var(--d)}
 table.tab tbody tr{cursor:pointer}table.tab tbody tr:hover{background:var(--act-pale)}
 .eseul{display:inline-flex;align-items:center;gap:3px;vertical-align:middle;margin-left:4px}.eseul .L{width:28px;height:28px;font-size:16px;border-radius:8px;outline:2px dashed #1c2128;outline-offset:1px}.eseul small{font:800 13px var(--d);color:var(--repere)}
 .qui button[style]{border-color:var(--at);border-width:3px}.qui button.ici[style]{background:var(--at);color:var(--at-t);border-color:var(--at)}
+.rate{margin:10px 0}.rate>b{display:flex;align-items:center;gap:8px}
+.barre-rate{display:grid;grid-template-columns:minmax(140px,40%) 1fr 36px;gap:8px;align-items:center;font-size:15px;margin:4px 0}
+.barre-rate i{display:block;height:14px;border-radius:7px;background:var(--alerte)}.barre-rate b{text-align:right}
+.courbe{margin:10px 0}.courbe svg{width:100%;max-width:600px;height:auto;background:#fff;border-radius:12px;border:1px solid var(--trait)}
+.rot-temps{font:800 34px/1 var(--d);color:var(--act-fonce)}
+.rot-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:12px 0}
+.rot-case{border:5px solid var(--at);border-radius:16px;padding:12px;background:var(--craie)}.rot-case span{display:block;font-weight:800;color:var(--repere)}.rot-case b{font:800 30px/1.1 var(--d);font-stretch:80%}
+@media print{nav.onglets,.bt,.qui,.retour,.demo-bandeau,.voile,.barre img{display:none!important}body{padding:0;background:#fff}main{max-width:none}.carte,.atelier{break-inside:avoid}table.tab th{color:#000;background:#eee}}
 .paratelier{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .paratelier .carte{margin:0;border:3px solid var(--at,var(--trait))}.paratelier h3{display:flex;align-items:center;gap:8px;font-size:19px}
 .ligne-el{display:flex;align-items:center;gap:6px;width:100%;text-align:left;min-height:46px;padding:4px 8px;border:0;border-top:1px solid var(--trait);background:none;font-weight:700}
