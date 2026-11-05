@@ -38,7 +38,7 @@ function importerObjet(o,source){
       const k=a.n+nv,ch=(x.s||'')[ia*6+in_]||'0',d=(x.d||{})[k],v=E.v[k]||{};
       const te=d&&d[0]?d[0]*1000:(ch==='e'||ch==='p'?o.ts*1000:0),tp=d&&d[2]?d[2]*1000:(ch==='p'?o.ts*1000:0);
       if(te&&(!v.e||te>v.e)){v.e=te;v.par=d?d[1]:''}
-      if(tp&&(!v.p||tp>v.p)){v.p=tp}
+      // Les P venant d’un téléphone ne comptent plus : seuls ceux validés dans cet outil (prof-valid.js) font foi.
       if(ch==='d')v.deb=1;
       if(v.e||v.p||v.deb){E.v[k]=v}
     }));
@@ -119,11 +119,10 @@ async function importerListe(files,texte,classeDefaut){
 function chaineEleve(E){return GYM.ateliers.map(a=>NIVS.map(n=>{const v=E.v[a.n+n]||{};return v.p?'p':v.e?'e':v.deb?'d':'0'}).join('')).join('')}
 async function empreinte(code){const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('gym-prof|'+code));return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24)}
 async function qrDemarrage(c){
-  if(!DB.pin){alert('Choisissez d’abord votre code de validation (Réglages).');DB.vue='classes';rendre();return}
   const L=DB.classes[c]=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};if(!L.cc){L.cc=EPSCode.nouvelleCle();sauver()}
   // validations connues par élève (6 ateliers × 6 niveaux : 0, e, p, d) — seules les lignes non vides
   const pv={};elevesClasse(c).forEach(x=>{const ch=chaineEleve(x.E);if(/[epd]/.test(ch))pv[x.nom]=ch});
-  const txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',k:DB.pin,b:L.barres?1:0,cc:L.cc,pv,ts:Math.round(Date.now()/1000)});
+  const txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',pk:(await SIGNE.cles()).pub,b:L.barres?1:0,tc:L.tc?1:0,cc:L.cc,pv,ts:Math.round(Date.now()/1000)});
   let svg;try{svg=GQR.svgQR(txt)}catch(e){svg='<p class="alerte">Liste trop longue pour un seul QR.</p>'}
   const d=document.createElement('div');d.className='voile';
   d.innerHTML=`<div class="fen" style="max-width:640px"><h2>Classe ${esc(c)} · gymnastique</h2><p>Appli élève : « QR de la classe (prof) », ou Groupe → « Scanner le QR de la classe ».</p><p class="small muted">Le QR contient aussi vos validations P : elles s’ajoutent sur les tablettes, et un groupe qui a oublié son code retrouve ses niveaux en recréant son carnet avec la liste de la classe.</p><div class="qrbox">${svg}</div><button class="bt noir" type="button" style="margin-top:12px">Fermer</button></div>`;
@@ -183,7 +182,7 @@ function nbAValider(){return DB.classe?aValider(DB.classe).length:0}
 function vValider(){
   if(!DB.classe)return '<p class="carte">Aucune classe.</p>';
   const T=aValider(DB.classe),f=DB.tourAt||0,L=f?T.filter(y=>+y.k[0]===f):T;
-  return `<h2>À valider (P)</h2><p class="small muted">Niveaux cochés E par un camarade, pas encore validés par vous. Tour de gymnase : choisissez l’atelier où vous êtes, regardez l’élève passer, validez d’un toucher.</p>
+  return `<h2>À valider (P)</h2><p><button class="bt act" type="button" data-act="scanvalid">📷 Valider un élève (QR de son téléphone)</button></p><p class="small muted">Niveaux cochés E par un camarade, pas encore validés par vous. Tour de gymnase : choisissez l’atelier où vous êtes, regardez l’élève passer, validez d’un toucher.</p>
   <div class="qui">${[0,...GYM.ateliers.map(a=>a.n)].map(n=>`<button type="button" class="${f===n?'ici':''}" ${n?st(n):''} data-act="tour" data-v="${n}">${n?n+' · '+esc(GYM.ateliers[n-1].court):'Tous'} (${n?T.filter(y=>+y.k[0]===n).length:T.length})</button>`).join('')}</div>
   ${L.length?GYM.ateliers.map(a=>{const M=L.filter(y=>+y.k[0]===a.n);return M.length?`<section class="atelier" ${st(a.n)}><header><span class="n">${a.n}</span><b>${esc(a.nom)}</b></header>${M.map(y=>{const n=a.niv.find(z=>z.n===y.k[1]);return `<div class="niv" style="cursor:default"><span class="L L${y.k[1]}">${y.k[1]}</span><span><span class="nom">${esc(y.x.nom)}${rafale(y.x.E)?' ⚡':''}</span><div class="crit">${esc(n.nom)} · E ${dateFr(y.v.e)}${y.v.par?' par '+esc(y.v.par):''}${n.prof?' · ⚠️ présence prof':''}</div></span><span class="ep"><button class="bt mini ok" type="button" data-act="togP" data-v="${y.k}" data-e="${esc(y.x.k)}">Valider P</button></span></div>`}).join('')}</section>`:''}).join(''):'<p class="carte">Rien en attente.</p>'}`;
 }
@@ -197,14 +196,14 @@ function vRecevoir(){
 function vClasses(){
   const C=Object.keys(DB.classes).sort();
   return `<h2>Réglages</h2>
-  <section class="carte"><h3>🔐 Votre code de validation (P)</h3><p class="small muted">Code de 4 à 8 chiffres que vous tapez sur les tablettes pour valider un niveau P. Seule son empreinte part dans le QR de la classe. Après un changement, refaites scanner le QR de la classe.</p>
-  <p>${DB.pin?'<span class="tampon p">Code réglé</span>':'<span class="alerte" style="display:inline-block">Pas encore de code</span>'}</p><button class="bt" type="button" data-act="pin">${DB.pin?'Changer':'Choisir'} le code</button></section>
+  <section class="carte"><h3>🔐 Validation P</h3><p class="small muted">Plus aucun code à taper sur les téléphones. L’élève touche « Montrer au professeur » : vous scannez son QR (À valider → <b>📷 Valider un élève</b>), vous validez, puis il scanne votre réponse. Elle est signée par une clé qui reste sur cet iPad : un élève ne peut pas fabriquer de P. Seuls les P enregistrés ici comptent dans la note. Gardez une sauvegarde de l’outil (la clé est dedans).</p></section>
   <section class="carte"><h3>Importer une liste Pronote</h3><p class="small muted">Pronote : liste des élèves → Exporter (xlsx, xls ou csv). Avec une colonne « Classe », plusieurs classes d’un coup. Sinon écrivez la classe d’abord.</p>
   <label class="small"><b>Classe</b> (si le fichier n’a pas de colonne Classe)</label><input id="cl-nom" type="text" placeholder="ex. 1G3">
   <div class="rangee" style="margin-top:10px"><label class="bt noir" for="cl-fic">Choisir le fichier Pronote</label><input id="cl-fic" type="file" accept=".xlsx,.xls,.csv,.ods,.txt" hidden multiple></div></section>
   ${C.map(c=>{const L=DB.classes[c];return `<section class="carte"><h3>${esc(c)} · ${L.eleves.length} élèves</h3>
    <label class="small"><b>Lien de dépôt Nuage</b> (facultatif, « Demande de fichier »)</label><input type="text" data-lien="${esc(c)}" value="${esc(L.lien||'')}" placeholder="https://nuage…">
    <label class="coche"><input type="checkbox" data-barres="${esc(c)}" ${L.barres?'checked':''}> Afficher les barres asymétriques aux élèves</label>
+   <label class="coche"><input type="checkbox" data-tc="${esc(c)}" ${L.tc?'checked':''}> 🔑 Code du cours pour valider E à <b>tous</b> les niveaux (sinon : seulement les niveaux ⚠️)</label>
    <div class="rangee" style="margin-top:10px"><button class="bt act" type="button" data-act="qrclasse" data-v="${esc(c)}">▦ QR de démarrage</button><button class="bt" type="button" data-act="codecours" data-v="${esc(c)}">🔑 Code du cours</button><button class="bt mini danger" type="button" data-act="suppclasse" data-v="${esc(c)}">Supprimer la classe</button></div></section>`}).join('')}
   ${vBareme()}
   ${carteDemo()}
@@ -230,6 +229,7 @@ document.addEventListener('click',async ev=>{
     case 'togP':{const E=DB.el[b.dataset.e]||(()=>{const x=elevesClasse(DB.classe).find(y=>y.k===b.dataset.e);return eleve(DB.classe,x.nom)})();
       const w=E.v[v]=E.v[v]||{};if(w.p){if(!confirm('Retirer la validation P ?'))return;delete w.p;delete w.pp}else{w.p=Date.now();w.pp=1;if(!w.e)w.e=w.p}
       if(!w.e&&!w.p&&!w.deb)delete E.v[v];sauver();rendre();break}
+    case 'scanvalid':scanValidation();break;
     case 'scan':GQR.scanner(async t=>{const r=importerObjet(await GQR.decoder(t),'QR');rendre();return r},{continu:true,titre:'Fiches des groupes',aide:'Scannez les QR des tablettes les uns après les autres.'});break;
     case 'qrclasse':qrDemarrage(v||DB.classe);break;
     case 'codecours':{const c=v||DB.classe,L=DB.classes[c]=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};if(!L.cc){L.cc=EPSCode.nouvelleCle();sauver()}EPSCode.prof({app:'gyp',classe:c,cle:L.cc,seances:[{v:'G',n:'Gym'}]});break}
@@ -260,6 +260,7 @@ document.addEventListener('change',async ev=>{
   else if(t.dataset.bar){const B=bareme();if(t.dataset.bar==='nat')B.nat=Math.max(1,Math.min(6,+t.value||6));else if(t.dataset.bar==='cible')B.cible=Math.max(1,+t.value||8);else B.val[+t.dataset.bar]=Math.max(0,+String(t.value).replace(',','.')||0);DB.bareme=B;sauver();rendre()}
   else if(t.id==='bilan-date'){DB.bilanJ=t.value?new Date(t.value+'T12:00').getTime():0;rendre()}
   else if(t.dataset.lien){DB.classes[t.dataset.lien].lien=t.value.trim();sauver()}
+  else if(t.dataset.tc){DB.classes[t.dataset.tc].tc=t.checked;sauver();alert('Refaites scanner le QR de la classe pour que les téléphones le prennent en compte.')}
   else if(t.dataset.barres){DB.classes[t.dataset.barres].barres=t.checked;sauver();alert('Refaites scanner le QR de la classe pour que les tablettes le prennent en compte.')}
 });
 if(/[?&]demo\b/.test(location.search))ouvrirDemo();

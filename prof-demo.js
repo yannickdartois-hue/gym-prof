@@ -37,5 +37,5 @@ async function construireDemo(){
 }
 async function ouvrirDemo(){if(!DEMO){DB_REEL=DB}DB=await construireDemo();DEMO=true;rendre();scrollTo(0,0)}
 function quitterDemo(){DB=DB_REEL||charger();DB_REEL=null;DEMO=false;rendre();scrollTo(0,0)}
-function bandeauDemo(){return DEMO?`<div class="demo-bandeau"><span>👀 <b>Mode démo</b> : classe fictive, rien n’est enregistré. Code de validation : <b>0000</b>.</span><button type="button" class="bt mini" data-act="demofin">Quitter la démo</button></div>`:''}
+function bandeauDemo(){return DEMO?`<div class="demo-bandeau"><span>👀 <b>Mode démo</b> : classe fictive, rien n’est enregistré.</span><button type="button" class="bt mini" data-act="demofin">Quitter la démo</button></div>`:''}
 function carteDemo(){return DEMO?'':`<section class="carte demo-carte"><h3>👀 Découvrir avec une classe fictive</h3><p class="small muted">24 élèves, un mois de cycle : tableau, niveaux à valider, export. Vos vraies données ne sont pas touchées.</p><button type="button" class="bt" data-act="demo">Ouvrir la démo</button></section>`}

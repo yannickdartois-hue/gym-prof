@@ -9,12 +9,12 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 </ol><p class="astuce">Une seule fois après cette mise à jour : refaites scanner le <b>QR de démarrage</b> (il apporte la clé de la classe). Tant qu’un téléphone ne l’a pas rescanné, il n’est pas verrouillé.</p>`},
 
 {t:'Mise en place (une fois par classe)',html:`<ol>
-<li><b>Réglages → Votre code de validation</b> : 4 à 8 chiffres. Vous le tapez sur les tablettes pour valider P. Seule son empreinte part dans le QR.</li>
 <li><b>Réglages → Importer une liste Pronote</b> (xlsx, xls ou csv). Avec une colonne « Classe », plusieurs classes d’un coup.</li>
 <li>Facultatif : <b>lien de dépôt Nuage</b> de la classe, et la case <b>barres asymétriques</b> (cachées par défaut).</li>
 <li><span class="bouton">▦ QR de démarrage</span> : chaque tablette le scanne (appli élève → « QR de la classe »).</li>
 </ol><p class="astuce">Le QR de la classe contient aussi les validations que vous connaissez : refaites-le scanner de temps en temps, il renvoie vos P sur les tablettes et permet à un groupe qui a oublié son code de retrouver ses niveaux.</p>`},
 {t:'Pendant le cours',html:`<ul>
+<li><b>Valider P devant l’élève</b> : il touche « 📲 Montrer au professeur » ; vous : À valider → <span class="bouton">📷 Valider un élève</span>, scannez son téléphone, <span class="bouton">✅ Valider P</span>. Votre écran affiche alors un QR de réponse signé : l’élève le scanne pour voir son P. Pressé ? Fermez : le P compte déjà, il descendra avec le QR de la classe. <b>Seuls les P enregistrés dans votre outil comptent</b>, un téléphone ne peut pas en créer.</li>
 <li><b>À valider</b> : les niveaux validés E par un camarade, pas encore P. Choisissez l’atelier où vous êtes (tour de gymnase), regardez l’élève, <span class="bouton">Valider P</span>. ⚡ = rafale de validations E (4 en moins de 10 min) : allez voir.</li>
 <li><span class="bouton">🔄 Rotation des ateliers</span> (onglet Classe) : nombre de groupes, minutes par atelier, ateliers ouverts. Grand affichage avec compte à rebours et bip ; le QR de rotation affiche l’atelier en cours sur chaque tablette.</li>
 <li><b>Par atelier</b> (onglet Classe) : qui est à quel niveau, 🎯 objectifs du jour, et les <b>critères les plus ratés</b> signalés par les observateurs.</li>
@@ -32,7 +32,7 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 </ul>`},
 {t:'Sauvegarde, démo, mise à jour',html:`<ul>
 <li>Les données restent sur cet appareil. <b>Réglages → Sauvegarde</b> : téléchargez-la régulièrement.</li>
-<li><b>Démo</b> (Réglages) : classe fictive de 24 élèves, vos données ne sont pas touchées. Code de la démo : 0000.</li>
+<li><b>Démo</b> (Réglages) : classe fictive de 24 élèves, vos données ne sont pas touchées. </li>
 <li>Bandeau jaune « Nouvelle version » : <span class="bouton">Mettre à jour</span>.</li>
 </ul>`}
 ]}
