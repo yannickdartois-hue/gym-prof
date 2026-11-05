@@ -12,6 +12,9 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const dateFr=ms=>ms?new Date(ms).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'';
 const prenom=n=>String(n||'').split(/\s+/)[0];
+/* Couleur de cadre de chaque atelier, comme l'accueil du PowerPoint */
+const COUL={1:'#92d050',2:'#ffff00',3:'#00b0f0',4:'#7030a0',5:'#ffc000',6:'#ff6600'},TXT={4:'#fff'};
+const st=k=>COUL[k]?`style="--at:${COUL[k]};--at-t:${TXT[k]||'#1c2128'}"`:'';
 
 /* ---------- Base ---------- */
 // DB.el[clé] = {nom, classe, v:{'1C':{e:ms, par:'Hugo', p:ms, pp:1 (validé ici par le prof), deb:1}}, maj:ms}
@@ -143,14 +146,14 @@ function vTableau(){
   return `<h2>Classe ${esc(DB.classe)}</h2>
   <p class="small muted">Lettre = meilleur niveau validé <b>P</b> par atelier · petite lettre en pointillés = niveau plus haut validé seulement <b>E</b> par un camarade (à confirmer). Touchez un élève pour sa fiche.</p>
   <div class="rangee"><button class="bt mini" type="button" data-act="qrclasse">▦ QR de la classe</button><button class="bt mini" type="button" data-act="csv">⬇ Export CSV (note)</button></div>
-  <div style="overflow-x:auto;margin-top:10px"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}">${a.n}<br><span class="small">${esc(a.court)}</span></th>`).join('')}<th>P</th></tr></thead>
+  <div style="overflow-x:auto;margin-top:10px"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}" style="box-shadow:inset 0 -8px 0 ${COUL[a.n]}">${a.n}<br><span class="small">${esc(a.court)}</span></th>`).join('')}<th>P</th></tr></thead>
   <tbody>${L.map(x=>`<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left"><b>${esc(x.nom)}</b>${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td><b>${Object.values(x.E.v).filter(v=>v.p).length}</b></td></tr>`).join('')}</tbody></table></div>`;
 }
 function vEleve(k){
   const E=DB.el[k]||(()=>{const [c]=k.split('|');const x=elevesClasse(DB.classe).find(y=>y.k===k);return x?eleve(x.E.classe||DB.classe,x.nom):null})();
   if(!E){DB.eleve=null;return vTableau()}
   return `<button class="retour" type="button" data-act="eleve" data-v="">‹ Classe</button><h2>${esc(E.nom)}</h2><p class="small muted">${esc(E.classe)} · touchez une case pour valider ou retirer P (validation professeur).</p>
-  ${GYM.ateliers.map(a=>`<section class="atelier"><header><span class="n">${a.n}</span><b>${esc(a.nom)}</b></header>
+  ${GYM.ateliers.map(a=>`<section class="atelier" ${st(a.n)}><header><span class="n">${a.n}</span><b>${esc(a.nom)}</b></header>
    ${a.niv.map(n=>{const kk=a.n+n.n,v=E.v[kk]||{},s=etat(E,kk);return `<div class="niv" style="cursor:default"><span class="L L${n.n}">${n.n}</span><span><span class="nom">${esc(n.nom)}</span><div class="crit">${v.e?'E '+dateFr(v.e)+(v.par?' par '+esc(v.par):''):''}${v.p?' · P '+dateFr(v.p):''}${v.deb?' · ouvert par le prof':''}</div></span>
      <span class="ep"><span class="${s?'e v':''}">E</span><button class="bt mini ${s==='p'?'ok':''}" type="button" data-act="togP" data-v="${kk}" data-e="${esc(k)}" style="min-width:56px">${s==='p'?'P ✔':'P'}</button></span></div>`}).join('')}</section>`).join('')}`;
 }
@@ -160,7 +163,7 @@ function vValider(){
   if(!DB.classe)return '<p class="carte">Aucune classe.</p>';
   const L=aValider(DB.classe);
   return `<h2>À valider (P)</h2><p class="small muted">Niveaux cochés E par un camarade, pas encore validés par vous. Regardez l’élève passer, puis validez ici ou sur sa tablette avec votre code.</p>
-  ${L.length?GYM.ateliers.map(a=>{const M=L.filter(y=>+y.k[0]===a.n);return M.length?`<section class="atelier"><header><span class="n">${a.n}</span><b>${esc(a.nom)}</b></header>${M.map(y=>{const n=a.niv.find(z=>z.n===y.k[1]);return `<div class="niv" style="cursor:default"><span class="L L${y.k[1]}">${y.k[1]}</span><span><span class="nom">${esc(y.x.nom)}</span><div class="crit">${esc(n.nom)} · E ${dateFr(y.v.e)}${y.v.par?' par '+esc(y.v.par):''}${n.prof?' · ⚠️ présence prof':''}</div></span><span class="ep"><button class="bt mini ok" type="button" data-act="togP" data-v="${y.k}" data-e="${esc(y.x.k)}">Valider P</button></span></div>`}).join('')}</section>`:''}).join(''):'<p class="carte">Rien en attente.</p>'}`;
+  ${L.length?GYM.ateliers.map(a=>{const M=L.filter(y=>+y.k[0]===a.n);return M.length?`<section class="atelier" ${st(a.n)}><header><span class="n">${a.n}</span><b>${esc(a.nom)}</b></header>${M.map(y=>{const n=a.niv.find(z=>z.n===y.k[1]);return `<div class="niv" style="cursor:default"><span class="L L${y.k[1]}">${y.k[1]}</span><span><span class="nom">${esc(y.x.nom)}</span><div class="crit">${esc(n.nom)} · E ${dateFr(y.v.e)}${y.v.par?' par '+esc(y.v.par):''}${n.prof?' · ⚠️ présence prof':''}</div></span><span class="ep"><button class="bt mini ok" type="button" data-act="togP" data-v="${y.k}" data-e="${esc(y.x.k)}">Valider P</button></span></div>`}).join('')}</section>`:''}).join(''):'<p class="carte">Rien en attente.</p>'}`;
 }
 function vRecevoir(){
   return `<h2>Recevoir les fiches</h2>
