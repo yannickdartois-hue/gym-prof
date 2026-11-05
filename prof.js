@@ -136,12 +136,12 @@ function rendre(){
   $('#app').innerHTML=DB.eleve&&DB.vue==='tableau'?vEleve(DB.eleve):{tableau:()=>sel+vTableau(),valider:()=>sel+vValider(),recevoir:vRecevoir,classes:vClasses}[DB.vue]();
 }
 function cellule(E,a){const p=meilleur(E,a,'p'),e=meilleur(E,a,'e');
-  return `<td>${p?`<span class="L L${p}" style="width:36px;height:36px;font-size:20px">${p}</span>`:'<span class="muted">–</span>'}${e&&e!==p?` <span class="tampon e small" title="validé E par un camarade, à confirmer">${e}</span>`:''}</td>`}
+  return `<td>${p?`<span class="L L${p}" style="width:36px;height:36px;font-size:20px">${p}</span>`:'<span class="muted">–</span>'}${e&&e!==p?`<span class="eseul" title="validé E par un camarade, à confirmer"><span class="L L${e}">${e}</span><small>E</small></span>`:''}</td>`}
 function vTableau(){
   if(!DB.classe)return `<h2>Bienvenue</h2><p class="carte">Commencez par importer une liste Pronote (onglet Réglages), puis montrez le QR de la classe aux tablettes.</p>`;
   const L=elevesClasse(DB.classe);
   return `<h2>Classe ${esc(DB.classe)}</h2>
-  <p class="small muted">Lettre = meilleur niveau validé <b>P</b> par atelier · étiquette jaune = niveau plus haut validé seulement <b>E</b> (à confirmer). Touchez un élève pour sa fiche.</p>
+  <p class="small muted">Lettre = meilleur niveau validé <b>P</b> par atelier · petite lettre en pointillés = niveau plus haut validé seulement <b>E</b> par un camarade (à confirmer). Touchez un élève pour sa fiche.</p>
   <div class="rangee"><button class="bt mini" type="button" data-act="qrclasse">▦ QR de la classe</button><button class="bt mini" type="button" data-act="csv">⬇ Export CSV (note)</button></div>
   <div style="overflow-x:auto;margin-top:10px"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}">${a.n}<br><span class="small">${esc(a.court)}</span></th>`).join('')}<th>P</th></tr></thead>
   <tbody>${L.map(x=>`<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left"><b>${esc(x.nom)}</b>${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td><b>${Object.values(x.E.v).filter(v=>v.p).length}</b></td></tr>`).join('')}</tbody></table></div>`;
