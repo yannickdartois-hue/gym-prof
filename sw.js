@@ -1,5 +1,5 @@
 /* Hors ligne. À chaque mise en ligne : augmenter VERSION (gym-prof-vN). */
-const VERSION='gym-prof-v13';
+const VERSION='gym-prof-v14';
 // Toutes les applis partagent le même stockage (même adresse github.io) : on n'efface QUE les anciennes versions de CETTE appli.
 const MES_CACHES=/^gym-prof-v\d+$/;
 const sous3s=p=>{p.catch(()=>{});return Promise.race([p,new Promise((_,non)=>setTimeout(()=>non(new Error('réseau lent')),3000))])};
@@ -9,6 +9,6 @@ self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.a
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>MES_CACHES.test(k)&&k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET'||new URL(e.request.url).origin!==location.origin)return;
-  const net=fetch(e.request).then(r=>{if(r.status===200){const c=r.clone();caches.open(VERSION).then(x=>x.put(e.request,c))}return r});
+  const net=fetch(e.request,{cache:'no-cache'}).then(r=>{if(r.status===200){const c=r.clone();caches.open(VERSION).then(x=>x.put(e.request,c))}return r});
   e.respondWith(sous3s(net).catch(()=>caches.match(e.request,{ignoreSearch:true}).then(h=>h||net)));
 });
