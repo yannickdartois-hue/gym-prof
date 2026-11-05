@@ -120,10 +120,10 @@ function chaineEleve(E){return GYM.ateliers.map(a=>NIVS.map(n=>{const v=E.v[a.n+
 async function empreinte(code){const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('gym-prof|'+code));return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24)}
 async function qrDemarrage(c){
   if(!DB.pin){alert('Choisissez d’abord votre code de validation (Réglages).');DB.vue='classes';rendre();return}
-  const L=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};
+  const L=DB.classes[c]=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};if(!L.cc){L.cc=EPSCode.nouvelleCle();sauver()}
   // validations connues par élève (6 ateliers × 6 niveaux : 0, e, p, d) — seules les lignes non vides
   const pv={};elevesClasse(c).forEach(x=>{const ch=chaineEleve(x.E);if(/[epd]/.test(ch))pv[x.nom]=ch});
-  const txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',k:DB.pin,b:L.barres?1:0,pv,ts:Math.round(Date.now()/1000)});
+  const txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',k:DB.pin,b:L.barres?1:0,cc:L.cc,pv,ts:Math.round(Date.now()/1000)});
   let svg;try{svg=GQR.svgQR(txt)}catch(e){svg='<p class="alerte">Liste trop longue pour un seul QR.</p>'}
   const d=document.createElement('div');d.className='voile';
   d.innerHTML=`<div class="fen" style="max-width:640px"><h2>Classe ${esc(c)} · gymnastique</h2><p>Appli élève : « QR de la classe (prof) », ou Groupe → « Scanner le QR de la classe ».</p><p class="small muted">Le QR contient aussi vos validations P : elles s’ajoutent sur les tablettes, et un groupe qui a oublié son code retrouve ses niveaux en recréant son carnet avec la liste de la classe.</p><div class="qrbox">${svg}</div><button class="bt noir" type="button" style="margin-top:12px">Fermer</button></div>`;
@@ -205,7 +205,7 @@ function vClasses(){
   ${C.map(c=>{const L=DB.classes[c];return `<section class="carte"><h3>${esc(c)} · ${L.eleves.length} élèves</h3>
    <label class="small"><b>Lien de dépôt Nuage</b> (facultatif, « Demande de fichier »)</label><input type="text" data-lien="${esc(c)}" value="${esc(L.lien||'')}" placeholder="https://nuage…">
    <label class="coche"><input type="checkbox" data-barres="${esc(c)}" ${L.barres?'checked':''}> Afficher les barres asymétriques aux élèves</label>
-   <div class="rangee" style="margin-top:10px"><button class="bt act" type="button" data-act="qrclasse" data-v="${esc(c)}">▦ QR de démarrage</button><button class="bt mini danger" type="button" data-act="suppclasse" data-v="${esc(c)}">Supprimer la classe</button></div></section>`}).join('')}
+   <div class="rangee" style="margin-top:10px"><button class="bt act" type="button" data-act="qrclasse" data-v="${esc(c)}">▦ QR de démarrage</button><button class="bt" type="button" data-act="codecours" data-v="${esc(c)}">🔑 Code du cours</button><button class="bt mini danger" type="button" data-act="suppclasse" data-v="${esc(c)}">Supprimer la classe</button></div></section>`}).join('')}
   ${vBareme()}
   ${carteDemo()}
   <section class="carte"><h3>Sauvegarde</h3><div class="rangee"><button class="bt" type="button" data-act="sauvegarde">⬇ Télécharger une sauvegarde</button><label class="bt" for="restau">⬆ Restaurer</label><input id="restau" type="file" accept=".json" hidden></div></section>`;
@@ -232,6 +232,7 @@ document.addEventListener('click',async ev=>{
       if(!w.e&&!w.p&&!w.deb)delete E.v[v];sauver();rendre();break}
     case 'scan':GQR.scanner(async t=>{const r=importerObjet(await GQR.decoder(t),'QR');rendre();return r},{continu:true,titre:'Fiches des groupes',aide:'Scannez les QR des tablettes les uns après les autres.'});break;
     case 'qrclasse':qrDemarrage(v||DB.classe);break;
+    case 'codecours':{const c=v||DB.classe,L=DB.classes[c]=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};if(!L.cc){L.cc=EPSCode.nouvelleCle();sauver()}EPSCode.prof({app:'gyp',classe:c,cle:L.cc,seances:[{v:'G',n:'Gym'}]});break}
     case 'csv':exportCSV();break;
     case 'rotation':ouvrirRotation();break;
     case 'rot-go':lancerRotation(+v);break;

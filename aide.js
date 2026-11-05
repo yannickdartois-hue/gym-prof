@@ -1,6 +1,13 @@
 /* aide.js — mode d'emploi de l'outil prof de gymnastique (lu par eps-aide.js) */
 window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 {id:'prof',titre:'Professeur',chapitres:[
+{t:'🔑 Code du cours (niveaux ⚠️)',html:`<ol>
+<li>En gym, le code ne sert qu’aux niveaux ⚠️ : sans lui, un élève ne peut pas valider E un salto ou un niveau E/F de trampoline hors du cours.</li>
+<li>Début de cours : <span class="bouton">🔑 Code du cours</span>, écrivez les 4 chiffres au tableau.</li>
+<li>Chaque groupe tape le code : la séance du jour s’ouvre sur son téléphone pendant 2 heures. Les autres niveaux ne demandent rien.</li>
+<li>Le code ne vaut que ce jour-là. Pour préparer un cours, changez la date : le code s’affiche à l’avance. Aucune connexion nécessaire.</li>
+</ol><p class="astuce">Une seule fois après cette mise à jour : refaites scanner le <b>QR de démarrage</b> (il apporte la clé de la classe). Tant qu’un téléphone ne l’a pas rescanné, il n’est pas verrouillé.</p>`},
+
 {t:'Mise en place (une fois par classe)',html:`<ol>
 <li><b>Réglages → Votre code de validation</b> : 4 à 8 chiffres. Vous le tapez sur les tablettes pour valider P. Seule son empreinte part dans le QR.</li>
 <li><b>Réglages → Importer une liste Pronote</b> (xlsx, xls ou csv). Avec une colonne « Classe », plusieurs classes d’un coup.</li>
