@@ -7,6 +7,7 @@
    - Rafales : plusieurs validations E en quelques minutes → « ⚡ à vérifier ».
    - Vue par atelier (groupes de besoin, parade) et bilan de séance.
    ===================================================================== */
+
 'use strict';
 const RAFALE={n:4,min:10};
 function bareme(){const B=DB.bareme||{};return {val:(B.val&&B.val.length===6)?B.val.slice():[1,2,3,4,5,6],nat:B.nat||6,cible:B.cible||8}}
@@ -98,7 +99,7 @@ async function notesPronote(){
   const txt=L.map(x=>arr(note(x.E,c).total)).join('\n');
   let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch(e){}
   const d=document.createElement('div');d.className='voile';
-  d.innerHTML=`<div class="fen"><h3>Notes /20 pour Pronote · ${esc(c)}</h3><p class="small">${ok?'✅ Copiées. ':''}Dans Pronote : saisie des notes du devoir → cliquez dans la case du premier élève → collez. Les notes sont arrondies au demi-point, dans l’ordre alphabétique (NOM puis prénom).</p>
+  d.innerHTML=`<div class="fen"><h3>Notes /20 pour Pronote · ${esc(c)}</h3>${AVT('tableau','Vérifie les notes avant de les reporter dans Pronote.')}<p class="small">${ok?'✅ Copiées. ':''}Dans Pronote : saisie des notes du devoir → cliquez dans la case du premier élève → collez. Les notes sont arrondies au demi-point, dans l’ordre alphabétique (NOM puis prénom).</p>
    <p class="small muted">Vérifiez que l’ordre est le même que dans Pronote (élèves arrivés ou partis en cours d’année).</p>
    <textarea readonly style="width:100%;height:240px;font:16px/1.4 monospace;border-radius:12px;border:1.5px solid var(--trait);padding:8px">${L.map(x=>arr(note(x.E,c).total)+'\t'+x.nom).join('\n')}</textarea>
    <div class="rangee" style="margin-top:10px;justify-content:flex-end"><button class="bt noir" type="button">Fermer</button></div></div>`;

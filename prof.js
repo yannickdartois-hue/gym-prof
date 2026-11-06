@@ -5,6 +5,8 @@
    liste les niveaux à valider et exporte pour la note.
    Données gardées sur cet appareil uniquement (localStorage).
    ===================================================================== */
+const AVT=(n,b,c)=>window.EPSAvatar?EPSAvatar(n,b,c):'';
+
 'use strict';
 const CLEP='gym-prof-v1',NIVS=['A','B','C','D','E','F'];
 const $=s=>document.querySelector(s);
@@ -148,7 +150,7 @@ function rendre(){
 function cellule(E,a){const p=meilleur(E,a,'p'),e=meilleur(E,a,'e');
   return `<td>${p?`<span class="L L${p}" style="width:36px;height:36px;font-size:20px">${p}</span>`:'<span class="muted">–</span>'}${e&&e!==p?`<span class="eseul" title="validé E par un camarade, à confirmer"><span class="L L${e}">${e}</span><small>E</small></span>`:''}</td>`}
 function vTableau(){
-  if(!DB.classe)return `<h2>Bienvenue</h2><p class="carte">Commencez par importer une liste Pronote (onglet Réglages), puis montrez le QR de la classe aux tablettes.</p>${carteDemo()}`;
+  if(!DB.classe)return `<h2>Bienvenue</h2>${AVT('prof','Bienvenue ! Commence par importer la liste Pronote de ta classe.')}<p class="carte">Commencez par importer une liste Pronote (onglet Réglages), puis montrez le QR de la classe aux tablettes.</p>${carteDemo()}`;
   const L=elevesClasse(DB.classe);
   return `<h2>Classe ${esc(DB.classe)}</h2>
   <p class="small muted">Lettre = meilleur niveau validé <b>P</b> par atelier · petite lettre en pointillés = niveau plus haut validé seulement <b>E</b> par un camarade (à confirmer). Touchez un élève pour sa fiche.</p>
