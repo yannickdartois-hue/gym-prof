@@ -115,7 +115,10 @@ function ouvrirRotation(){
   const d=document.createElement('div');d.className='voile';d.id='rotation';
   d.innerHTML=`<div class="fen"><h2>🔄 Rotation des ateliers · ${esc(DB.classe)}</h2>
    <label class="small"><b>Nombre de groupes</b></label><input id="rot-g" type="number" min="1" max="12" value="6">
-   <label class="small"><b>Minutes par atelier</b></label><input id="rot-m" type="number" min="1" max="60" value="8">
+   <label class="small"><b>Minutes par atelier</b></label><input id="rot-m" type="number" min="1" max="60" value="20">
+   <label class="small"><b>Nombre de tours aujourd’hui</b></label><input id="rot-n" type="number" min="1" max="12" value="3">
+   <p class="small"><b>Ce cours</b> (2 cours pour faire les 6 ateliers)</p>
+   <div class="rangee"><label class="coche"><input type="radio" name="rot-s" value="0" checked> Cours A : le groupe 1 commence à l’atelier 1</label><label class="coche"><input type="radio" name="rot-s" value="3"> Cours B : le groupe 1 commence à l’atelier 4</label></div>
    <p class="small"><b>Ateliers ouverts aujourd’hui</b> (dans l’ordre de passage)</p>
    <div class="rangee">${GYM.ateliers.map(a=>`<label class="coche" ${st(a.n)} style="border:3px solid var(--at)"><input type="checkbox" data-rot="${a.n}" checked> ${a.n} · ${esc(a.court)}</label>`).join('')}</div>
    <p class="small muted">Le groupe 1 commence sur le 1er atelier coché, le groupe 2 sur le 2e, etc. ; à chaque fin de temps, chacun passe à l’atelier suivant. Plus de groupes que d’ateliers : deux groupes partagent un atelier.</p>
@@ -124,12 +127,13 @@ function ouvrirRotation(){
 }
 function lancerRotation(dans){
   const o=[...document.querySelectorAll('[data-rot]:checked')].map(i=>+i.dataset.rot);if(!o.length){alert('Cochez au moins un atelier.');return}
-  DB.rotation={c:DB.classe,d:Date.now()+dans*60000,m:Math.max(1,+$('#rot-m').value||8),g:Math.max(1,+$('#rot-g').value||6),o};sauver();
+  const sel=document.querySelector('[name="rot-s"]:checked');
+  DB.rotation={c:DB.classe,d:Date.now()+dans*60000,m:Math.max(1,+$('#rot-m').value||20),g:Math.max(1,+$('#rot-g').value||6),o,n:Math.min(o.length,Math.max(1,+$('#rot-n').value||o.length)),s:sel?+sel.value:0};sauver();
   const d=$('#rotation');if(d)d.remove();afficherRotation();
 }
 function bip(){try{const C=new (window.AudioContext||window.webkitAudioContext)();[0,.25,.5].forEach(t=>{const o=C.createOscillator(),g=C.createGain();o.frequency.value=880;o.connect(g);g.connect(C.destination);g.gain.setValueAtTime(.4,C.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,C.currentTime+t+.2);o.start(C.currentTime+t);o.stop(C.currentTime+t+.22)})}catch(e){}}
 async function afficherRotation(){
-  const R=DB.rotation,qr=await GQR.encoder({a:'GYM',v:1,t:'T',c:R.c,d:Math.round(R.d/1000),m:R.m,g:R.g,o:R.o});
+  const R=DB.rotation,qr=await GQR.encoder({a:'GYM',v:1,t:'T',c:R.c,d:Math.round(R.d/1000),m:R.m,g:R.g,o:R.o,n:R.n,s:R.s});
   let svg;try{svg=GQR.svgQR(qr)}catch(e){svg=''}
   const d=document.createElement('div');d.className='voile';d.id='rotation';
   d.innerHTML=`<div class="fen" style="max-width:900px"><div class="rangee" style="justify-content:space-between"><h2 style="margin:0">🔄 Rotation · ${esc(R.c)}</h2><span id="rot-temps" class="rot-temps"></span></div>
@@ -138,13 +142,14 @@ async function afficherRotation(){
    <div class="rangee" style="margin-top:10px;justify-content:space-between"><button class="bt danger" type="button" data-act="rot-stop">Arrêter la rotation</button><button class="bt noir" type="button" onclick="fermerRotation()">Fermer (la rotation continue)</button></div></div>`;
   document.body.appendChild(d);
   let dernier=-2;
+  const NT=R.n||R.o.length,DEC=R.s||0;
   const maj=()=>{const t=Date.now()-R.d,dur=R.m*60000,tour=t<0?-1:Math.floor(t/dur),grid=$('#rot-grille'),tps=$('#rot-temps');if(!grid){clearInterval(ROT_T);return}
     if(tour!==dernier){if(dernier!==-2&&tour>=0)bip();dernier=tour}
-    if(tour>=R.o.length){tps.textContent='Terminé';grid.innerHTML='<p class="carte">Rotation terminée.</p>';return}
+    if(tour>=NT){tps.textContent='Terminé';grid.innerHTML='<p class="carte">Rotation terminée.</p>';return}
     const rest=t<0?-t:dur-(t%dur),mm=Math.floor(rest/60000),ss=Math.floor(rest/1000)%60;
-    tps.textContent=(t<0?'Début dans ':'Tour '+(tour+1)+'/'+R.o.length+' · ')+mm+':'+String(ss).padStart(2,'0');
+    tps.textContent=(t<0?'Début dans ':'Tour '+(tour+1)+'/'+NT+' · ')+mm+':'+String(ss).padStart(2,'0');
     const tr=Math.max(0,tour);
-    grid.innerHTML=Array.from({length:R.g},(_,g)=>{const a=R.o[(g+tr)%R.o.length],A=GYM.ateliers[a-1];return `<div class="rot-case" ${st(a)}><span>Groupe ${g+1}</span><b>${a} · ${esc(A.court)}</b></div>`}).join('');
+    grid.innerHTML=Array.from({length:R.g},(_,g)=>{const a=R.o[(g+tr+DEC)%R.o.length],A=GYM.ateliers[a-1];return `<div class="rot-case" ${st(a)}><span>Groupe ${g+1}</span><b>${a} · ${esc(A.court)}</b></div>`}).join('');
   };
   maj();clearInterval(ROT_T);ROT_T=setInterval(maj,1000);
 }
