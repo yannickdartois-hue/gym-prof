@@ -92,7 +92,7 @@ function lireLignes(rows,classeDefaut){
     else if(iEl>=0)n=decouperNom(r[iEl]);
     else if(hi<0)n=decouperNom(r[0]);
     if(!n||/^(total|effectif)/i.test(n))return;
-    const c=(iCl>=0&&r[iCl])||classeDefaut;if(!c)return;
+    const c=classeDefaut||(iCl>=0&&r[iCl]);if(!c)return; /* nom écrit = groupe : remplace la classe Pronote (groupes de Terminale) */
     (out[c]=out[c]||new Set()).add(n.trim());
   });
   return out;
@@ -226,7 +226,7 @@ function vClasses(){
   return `<h2>Réglages</h2>
   <section class="carte"><h3>🔐 Validation P</h3><p class="small muted">Plus aucun code à taper sur les téléphones. L’élève touche « Montrer au professeur » : vous scannez son QR (À valider → <b>📷 Valider un élève</b>), vous validez, puis il scanne votre réponse. Elle est signée par une clé qui reste sur cet iPad : un élève ne peut pas fabriquer de P. Seuls les P enregistrés ici comptent dans la note. Gardez une sauvegarde de l’outil (la clé est dedans).</p></section>
   <section class="carte"><h3>Importer une liste Pronote</h3><p class="small muted">Pronote : liste des élèves → Exporter (xlsx, xls ou csv). Avec une colonne « Classe », plusieurs classes d’un coup. Sinon écrivez la classe d’abord.</p>
-  <label class="small"><b>Classe</b> (si le fichier n’a pas de colonne Classe)</label><input id="cl-nom" type="text" placeholder="ex. 1G3">
+  <label class="small"><b>Classe ou groupe</b> (rempli : remplace la classe Pronote du fichier, ex. groupe de Terminale)</label><input id="cl-nom" type="text" placeholder="ex. 1G3">
   <div class="rangee" style="margin-top:10px"><label class="bt noir" for="cl-fic">Choisir le fichier Pronote</label><input id="cl-fic" type="file" accept=".xlsx,.xls,.csv,.ods,.txt" hidden multiple></div>
   <label class="small" for="cl-txt" style="display:block;margin-top:10px"><b>Ou coller la liste</b> (un élève par ligne, « NOM Prénom ») — pratique pour un élève arrivé en cours d’année</label><textarea id="cl-txt" rows="3" style="width:100%;box-sizing:border-box;font:inherit" placeholder="DUPONT Marie"></textarea>
   <div class="rangee" style="margin-top:8px"><button class="bt" type="button" data-act="clcoller">Importer la liste collée</button></div></section>
