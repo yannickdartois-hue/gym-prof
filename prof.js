@@ -125,7 +125,7 @@ async function importerListe(files,texte,classeDefaut){
     const buf=await f.arrayBuffer();let wb;
     if(/\.(csv|txt)$/i.test(f.name)||/text|csv/.test(f.type)){
       let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf)}catch(e){t=new TextDecoder('windows-1252').decode(buf)}
-      t=t.replace(/^﻿/,'');const l0=t.split(/\r?\n/)[0],sep=(l0.match(/;/g)||[]).length>=(l0.match(/,/g)||[]).length?';':',';
+      t=t.replace(/^﻿/,'');const l0=t.split(/\r?\n/)[0],sep=['\t',';',','].map(c=>[c,l0.split(c).length]).sort((a,b)=>b[1]-a[1])[0][0];
       wb=XLSX.read(t,{type:'string',FS:sep});
     }else wb=XLSX.read(buf,{type:'array'});
     wb.SheetNames.forEach(sn=>lots.push(XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:false,defval:''})));
