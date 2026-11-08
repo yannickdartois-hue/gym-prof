@@ -262,7 +262,7 @@ document.addEventListener('change',async ev=>{
   if(t.id==='fic'&&t.files.length){await importerFichiers([...t.files]);t.value=''}
   else if(t.id==='cl-fic'&&t.files.length){await importerListe([...t.files],'',($('#cl-nom').value||'').trim());t.value=''}
   else if(t.id==='restau'&&t.files[0]&&DEMO){alert('Quittez la démo avant de restaurer.');t.value=''}
-  else if(t.id==='restau'&&t.files[0]){try{const o=JSON.parse(await t.files[0].text());if(!o.el)throw 0;if(confirm('Remplacer les données de cet appareil par la sauvegarde ?')){DB=Object.assign(vide(),o);sauver();rendre()}}catch(e){alert('Fichier de sauvegarde non reconnu.')}}
+  else if(t.id==='restau'&&t.files[0]){try{const o=JSON.parse(await EPSCoffre.lireFichier(t.files[0]));if(!o.el)throw 0;if(confirm('Remplacer les données de cet appareil par la sauvegarde ?')){DB=Object.assign(vide(),o);sauver();rendre()}}catch(e){alert('Fichier de sauvegarde non reconnu.')}}
   else if(t.dataset.bar){const B=bareme();if(t.dataset.bar==='nat')B.nat=Math.max(1,Math.min(6,+t.value||6));else if(t.dataset.bar==='cible')B.cible=Math.max(1,+t.value||8);else B.val[+t.dataset.bar]=Math.max(0,+String(t.value).replace(',','.')||0);DB.bareme=B;sauver();rendre()}
   else if(t.id==='bilan-date'){DB.bilanJ=t.value?new Date(t.value+'T12:00').getTime():0;rendre()}
   else if(t.dataset.lien){DB.classes[t.dataset.lien].lien=t.value.trim();sauver()}
