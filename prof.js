@@ -98,6 +98,26 @@ function lireLignes(rows,classeDefaut){
   return out;
 }
 const triNom=(a,b)=>{const k=n=>{const p=partsNom(n);return norm(p.nom+' '+p.pre)};return k(a).localeCompare(k(b))};
+/* Classe déjà présente : ajouter les élèves du fichier à la liste actuelle, ou remplacer la liste */
+const cleNomL=n=>String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().split(/[\s'’-]+/).filter(Boolean).sort().join(' ');
+function modeListe(C,actuelle,tout){
+  const ex=C.filter(c=>(actuelle(c)||[]).length);if(!ex.length)return Promise.resolve('remplacer');
+  const e=s=>String(s).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+  let petit=false;
+  const lignes=ex.map(c=>{const a=actuelle(c),ka=new Set(a.map(cleNomL)),f=[...tout[c].keys()],kf=new Set(f.map(cleNomL));
+    const nv=f.filter(n=>!ka.has(cleNomL(n))).length,abs=a.filter(n=>!kf.has(cleNomL(n))).length;if(f.length<a.length/2)petit=true;
+    return `<li><b>${e(c)}</b> : ${a.length} élève${a.length>1?'s':''} dans l’appli, ${f.length} dans le fichier — ${nv} nouveau${nv>1?'x':''}${abs?`, ${abs} absent${abs>1?'s':''} du fichier`:''}</li>`}).join('');
+  return new Promise(ok=>{const d=document.createElement('div');
+    d.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(15,20,30,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    const bt=(v,t,s,pri)=>`<button type="button" data-v="${v}" style="display:block;width:100%;text-align:left;min-height:52px;margin:8px 0 0;padding:10px 14px;border-radius:12px;border:0;font:inherit;cursor:pointer;background:${pri?'#1c2128':'#e5e9f0'};color:${pri?'#fff':'#14181f'}"><b>${t}</b><br><span style="font-size:14px;opacity:.85">${s}</span></button>`;
+    d.innerHTML=`<div role="dialog" aria-modal="true" style="background:#fff;color:#14181f;border-radius:16px;max-width:500px;width:100%;max-height:90vh;overflow:auto;padding:18px;font-size:17px;line-height:1.4;box-shadow:0 12px 40px rgba(0,0,0,.3)">
+      <h3 style="margin:0 0 6px;font-size:21px">Cette classe existe déjà</h3><ul style="margin:6px 0;padding-left:20px;font-size:15px">${lignes}</ul>
+      ${bt('ajout','Ajouter ces élèves','Garde la liste actuelle et ajoute seulement les noms nouveaux. Pour un élève arrivé en cours d’année.',petit)}
+      ${bt('remplacer','Remplacer la liste','La liste devient celle du fichier. Un élève absent du fichier garde ses résultats, mais passe « Hors liste ».',!petit)}
+      ${bt('','Annuler','Ne rien changer.',false)}</div>`;
+    d.addEventListener('click',ev=>{const b=ev.target.closest('button[data-v]');if(!b)return;d.remove();ok(b.dataset.v||null)});
+    document.body.appendChild(d)})}
+function fusionListe(t,anciens){const vus=new Set([...t.keys()].map(cleNomL));(anciens||[]).forEach(n=>{if(!vus.has(cleNomL(n))){t instanceof Map?t.set(n,''):t.add(n)}})}
 async function importerListe(files,texte,classeDefaut){
   const lots=[];
   if(files&&files.length&&!window.XLSX)await chargerScript('xlsx.js');
@@ -114,8 +134,11 @@ async function importerListe(files,texte,classeDefaut){
   const tout={};lots.forEach(rows=>Object.entries(lireLignes(rows,classeDefaut)).forEach(([c,set])=>{tout[c]=tout[c]||new Set();set.forEach(n=>tout[c].add(n))}));
   const C=Object.keys(tout);
   if(!C.length){alert(classeDefaut?'Aucun nom trouvé.':'Aucun élève trouvé. Il faut une colonne « Classe », ou écrire le nom de la classe avant d’importer.');return}
+  const avant={};C.forEach(c=>avant[c]=((DB.classes[c]||{}).eleves||[]).slice());
+  const mode=await modeListe(C,c=>avant[c],tout);if(!mode)return;
+  if(mode==='ajout')C.forEach(c=>fusionListe(tout[c],avant[c]));
   C.forEach(c=>{const old=DB.classes[c]||{};DB.classes[c]={eleves:[...tout[c]].sort(triNom),lien:old.lien||'',barres:!!old.barres}});
-  journal('Listes importées : '+C.map(c=>c+' ('+tout[c].size+')').join(', '));
+  journal('Listes importées : '+C.map(c=>c+' ('+tout[c].size+')').join(', '));if(mode==='ajout'){const r=C.map(c=>{const ka=new Set(avant[c].map(cleNomL)),nv=[...tout[c].keys()].filter(n=>!ka.has(cleNomL(n)));return c+' : '+(nv.length?'+'+nv.length+' ('+nv.join(', ')+')':'aucun nouveau nom')+' → '+tout[c].size+' élèves'});setTimeout(()=>alert('Élèves ajoutés\n'+r.join('\n')+'\n\nPense à refaire scanner le QR de démarrage aux groupes de cette classe.'),50)}
   DB.classe=C[0];DB.vue='tableau';sauver();rendre();
 }
 function chaineEleve(E){return GYM.ateliers.map(a=>NIVS.map(n=>{const v=E.v[a.n+n]||{};return v.p?'p':v.e?'e':v.deb?'d':'0'}).join('')).join('')}
@@ -204,7 +227,9 @@ function vClasses(){
   <section class="carte"><h3>🔐 Validation P</h3><p class="small muted">Plus aucun code à taper sur les téléphones. L’élève touche « Montrer au professeur » : vous scannez son QR (À valider → <b>📷 Valider un élève</b>), vous validez, puis il scanne votre réponse. Elle est signée par une clé qui reste sur cet iPad : un élève ne peut pas fabriquer de P. Seuls les P enregistrés ici comptent dans la note. Gardez une sauvegarde de l’outil (la clé est dedans).</p></section>
   <section class="carte"><h3>Importer une liste Pronote</h3><p class="small muted">Pronote : liste des élèves → Exporter (xlsx, xls ou csv). Avec une colonne « Classe », plusieurs classes d’un coup. Sinon écrivez la classe d’abord.</p>
   <label class="small"><b>Classe</b> (si le fichier n’a pas de colonne Classe)</label><input id="cl-nom" type="text" placeholder="ex. 1G3">
-  <div class="rangee" style="margin-top:10px"><label class="bt noir" for="cl-fic">Choisir le fichier Pronote</label><input id="cl-fic" type="file" accept=".xlsx,.xls,.csv,.ods,.txt" hidden multiple></div></section>
+  <div class="rangee" style="margin-top:10px"><label class="bt noir" for="cl-fic">Choisir le fichier Pronote</label><input id="cl-fic" type="file" accept=".xlsx,.xls,.csv,.ods,.txt" hidden multiple></div>
+  <label class="small" for="cl-txt" style="display:block;margin-top:10px"><b>Ou coller la liste</b> (un élève par ligne, « NOM Prénom ») — pratique pour un élève arrivé en cours d’année</label><textarea id="cl-txt" rows="3" style="width:100%;box-sizing:border-box;font:inherit" placeholder="DUPONT Marie"></textarea>
+  <div class="rangee" style="margin-top:8px"><button class="bt" type="button" data-act="clcoller">Importer la liste collée</button></div></section>
   ${C.map(c=>{const L=DB.classes[c];return `<section class="carte"><h3>${esc(c)} · ${L.eleves.length} élèves</h3>
    <label class="small"><b>Lien de dépôt Nuage</b> (facultatif, « Demande de fichier »)</label><input type="text" data-lien="${esc(c)}" value="${esc(L.lien||'')}" placeholder="https://nuage…">
    <label class="coche"><input type="checkbox" data-barres="${esc(c)}" ${L.barres?'checked':''}> Afficher les barres asymétriques aux élèves</label>
@@ -230,6 +255,7 @@ document.addEventListener('click',async ev=>{
   switch(act){
     case 'vue':DB.vue=v;DB.eleve=null;sauver();rendre();scrollTo(0,0);break;
     case 'classe':DB.classe=v;DB.eleve=null;sauver();rendre();break;
+    case 'clcoller':importerListe([],($('#cl-txt').value||''),($('#cl-nom').value||'').trim());break;
     case 'eleve':DB.eleve=v||null;rendre();scrollTo(0,0);break;
     case 'togP':{const E=DB.el[b.dataset.e]||(()=>{const x=elevesClasse(DB.classe).find(y=>y.k===b.dataset.e);return eleve(DB.classe,x.nom)})();
       const w=E.v[v]=E.v[v]||{};if(w.p){if(!confirm('Retirer la validation P ?'))return;delete w.p;delete w.pp}else{w.p=Date.now();w.pp=1;if(!w.e)w.e=w.p}
