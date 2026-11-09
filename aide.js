@@ -5,6 +5,7 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 <li>En gym, le code ne sert qu’aux niveaux ⚠️ : sans lui, un élève ne peut pas valider E un salto ou un niveau E/F de trampoline hors du cours.</li>
 <li>Début de cours : <span class="bouton">🔑 Code du cours</span>, écrivez les 4 chiffres au tableau.</li>
 <li>Chaque groupe tape le code : la séance du jour s’ouvre sur son téléphone pendant 2 heures. Les autres niveaux ne demandent rien.</li>
+<li><b>Plus rapide : le QR du jour.</b> Le QR de la classe affiché un jour de cours ouvre aussi la séance : chaque groupe le scanne (« QR de la classe »), rien à taper. Il apporte en même temps vos P et la liste à jour. Le code au tableau reste valable.</li>
 <li>Le code ne vaut que ce jour-là. Pour préparer un cours, changez la date : le code s’affiche à l’avance. Aucune connexion nécessaire.</li>
 </ol><p class="astuce">Une seule fois après cette mise à jour : refaites scanner le <b>QR de démarrage</b> (il apporte la clé de la classe). Tant qu’un téléphone ne l’a pas rescanné, il n’est pas verrouillé.</p>`},
 
@@ -18,6 +19,11 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 <li><b>À valider</b> : les niveaux validés E par un camarade, pas encore P. Choisissez l’atelier où vous êtes (tour de gymnase), regardez l’élève, <span class="bouton">Valider P</span>. ⚡ = rafale de validations E (4 en moins de 10 min) : allez voir.</li>
 <li><span class="bouton">🔄 Rotation des ateliers</span> (onglet Classe) : nombre de groupes, minutes par atelier, ateliers ouverts. Grand affichage avec compte à rebours et bip ; le QR de rotation affiche l’atelier en cours sur chaque tablette.</li>
 <li><b>Par atelier</b> (onglet Classe) : qui est à quel niveau, 🎯 objectifs du jour, et les <b>critères les plus ratés</b> signalés par les observateurs.</li>
+</ul>`},
+{t:'Code secret oublié par un groupe',html:`<ul>
+<li>Le groupe touche son carnet, puis <b>Code oublié ?</b> : un QR s’affiche.</li>
+<li>Vous le scannez avec n’importe quel scanner de l’outil (<span class="bouton">📷 Valider un élève</span> ou <b>Recevoir → Scanner</b>) : le code à 4 chiffres s’affiche en grand. Dites-le au groupe.</li>
+<li>Fonctionne pour les groupes qui ont scanné le QR de la classe (version de novembre 2026) puis tapé leur code au moins une fois. La clé qui lit les codes est dans votre outil : gardez une sauvegarde à jour.</li>
 </ul>`},
 {t:'Fin du cours : recevoir',html:`<ul>
 <li><b>Recevoir → Scanner</b> : la caméra reste ouverte, scannez les QR des groupes à la suite.</li>
