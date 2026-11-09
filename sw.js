@@ -1,5 +1,5 @@
 /* Hors ligne. À chaque mise en ligne : augmenter VERSION (gym-prof-vN). */
-const VERSION='gym-prof-v28';
+const VERSION='gym-prof-v29';
 // Toutes les applis partagent le même stockage (même adresse github.io) : on n'efface QUE les anciennes versions de CETTE appli.
 const MES_CACHES=/^gym-prof-v\d+$/;
 const sous3s=p=>{p.catch(()=>{});return Promise.race([p,new Promise((_,non)=>setTimeout(()=>non(new Error('réseau lent')),3000))])};
