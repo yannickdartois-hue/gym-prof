@@ -4,7 +4,7 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 {t:'🔑 Code du cours (niveaux ⚠️)',html:`<ol>
 <li>En gym, le code ne sert qu’aux niveaux ⚠️ : sans lui, un élève ne peut pas valider E un salto ou un niveau E/F de trampoline hors du cours.</li>
 <li>Début de cours : <span class="bouton">🔑 Code du cours</span>, écrivez les 4 chiffres au tableau.</li>
-<li>Chaque groupe tape le code : la séance du jour s’ouvre sur son téléphone pendant 2 heures. Les autres niveaux ne demandent rien.</li>
+<li>Chaque groupe tape le code : la séance du jour s’ouvre sur son téléphone pour toute la journée. Les autres niveaux ne demandent rien.</li>
 <li><b>Plus rapide : le QR du jour.</b> Le QR de la classe affiché un jour de cours ouvre aussi la séance : chaque groupe le scanne (« QR de la classe »), rien à taper. Il apporte en même temps vos P et la liste à jour. Le code au tableau reste valable.</li>
 <li>Le code ne vaut que ce jour-là. Pour préparer un cours, changez la date : le code s’affiche à l’avance. Aucune connexion nécessaire.</li>
 </ol><p class="astuce">Une seule fois après cette mise à jour : refaites scanner le <b>QR de démarrage</b> (il apporte la clé de la classe). Tant qu’un téléphone ne l’a pas rescanné, il n’est pas verrouillé.</p>`},
