@@ -155,6 +155,8 @@ async function afficherRotation(){
 }
 
 /* ---------- Vue « Par groupe » : une carte par groupe (dernière fiche reçue de chaque élève) ---------- */
+/* prénom d'un nom Pronote « NOM Prénom » (ou « Prénom NOM ») : les mots qui ne sont pas tout en majuscules */
+const prenomP=n=>{const w=String(n||'').split(/\s+/).filter(Boolean),p=w.filter(x=>x!==x.toUpperCase());return (p.length?p.join(' '):w[0]||'')};
 function vParGroupe(){const c=DB.classe,L=elevesClasse(c),byK=new Map(L.map(x=>[norm(x.nom),x]));
   const G=Object.values(DB.groupes||{}).filter(g=>norm(g.classe)===norm(c)).sort((a,b)=>b.maj-a.maj);
   const pris=new Set(),cartes=[];
@@ -167,5 +169,5 @@ function vParGroupe(){const c=DB.classe,L=elevesClasse(c),byK=new Map(L.map(x=>[
   const rec=t=>{const d=new Date(t);return d.toDateString()===new Date().toDateString()?'fiche reçue aujourd’hui à '+d.getHours()+' h '+String(d.getMinutes()).padStart(2,'0'):'dernière fiche le '+d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})};
   return `<h2>Classe ${esc(c)} · par groupe</h2>${basculeVue()}
   <p class="small muted">${cartes.length} groupe${cartes.length>1?'s':''} d’après les fiches reçues. Touchez un élève pour sa fiche. Lettre = meilleur niveau P · pointillés = E à confirmer.</p>
-  <div class="grgrid">${cartes.map(({g,m})=>`<section class="carte grcarte"><h3>${g.lt?`<span class="grlt">Groupe ${esc(g.lt)}</span>`:''}${esc(m.map(x=>prenom(x.nom)).join(' · '))}</h3><p class="small muted">${rec(g.recu||g.maj)}</p>${tab(m)}</section>`).join('')||'<p class="carte muted">Aucune fiche de groupe reçue pour cette classe.</p>'}</div>
+  <div class="grgrid">${cartes.map(({g,m})=>`<section class="carte grcarte"><h3>${g.lt?`<span class="grlt">Groupe ${esc(g.lt)}</span>`:''}${esc(m.map(x=>prenomP(x.nom)).join(' · '))}</h3><p class="small muted">${rec(g.recu||g.maj)}</p>${tab(m)}</section>`).join('')||'<p class="carte muted">Aucune fiche de groupe reçue pour cette classe.</p>'}</div>
   ${seuls.length?`<section class="carte"><h3>Sans groupe reçu · ${seuls.length}</h3><p class="small muted">Élèves de la liste dont aucune fiche de groupe n’est encore arrivée (ou reçues avant cette version).</p>${tab(seuls)}</section>`:''}`}
