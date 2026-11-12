@@ -148,7 +148,7 @@ async function importerListe(files,texte,classeDefaut){
   const avant={};C.forEach(c=>avant[c]=((DB.classes[c]||{}).eleves||[]).slice());
   const mode=await modeListe(C,c=>avant[c],tout);if(!mode)return;
   if(mode==='ajout')C.forEach(c=>fusionListe(tout[c],avant[c]));
-  C.forEach(c=>{const old=DB.classes[c]||{};DB.classes[c]={eleves:[...tout[c]].sort(triNom),lien:old.lien||'',barres:!!old.barres}});
+  C.forEach(c=>{const old=DB.classes[c]||{};DB.classes[c]={eleves:[...tout[c]].sort(triNom),lien:old.lien||'',barres:!!old.barres,liaisons:!!old.liaisons}});
   journal('Listes importées : '+C.map(c=>c+' ('+tout[c].size+')').join(', '));if(mode==='ajout'){const r=C.map(c=>{const ka=new Set(avant[c].map(cleNomL)),nv=[...tout[c].keys()].filter(n=>!ka.has(cleNomL(n)));return c+' : '+(nv.length?'+'+nv.length+' ('+nv.join(', ')+')':'aucun nouveau nom')+' → '+tout[c].size+' élèves'});setTimeout(()=>alert('Élèves ajoutés\n'+r.join('\n')+'\n\nPense à refaire scanner le QR de démarrage aux groupes de cette classe.'),50)}
   DB.classe=C[0];DB.vue='tableau';sauver();rendre();
 }
@@ -158,7 +158,7 @@ async function qrDemarrage(c){
   const L=DB.classes[c]=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};if(!L.cc){L.cc=EPSCode.nouvelleCle();sauver()}
   // validations connues par élève (6 ateliers × 6 niveaux : 0, e, p, d) — seules les lignes non vides
   const pv={};elevesClasse(c).forEach(x=>{const ch=chaineEleve(x.E);if(/[epd]/.test(ch))pv[x.nom]=ch});
-  const txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',pk:(await SIGNE.cles()).pub,b:L.barres?1:0,tc:L.tc?1:0,cc:L.cc,cj:await EPSCode.cjDuJour('gyp',c,L.cc,'G'),pv,ts:Math.round(Date.now()/1000)});
+  const txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',pk:(await SIGNE.cles()).pub,b:L.barres?1:0,li:L.liaisons?1:0,tc:L.tc?1:0,cc:L.cc,cj:await EPSCode.cjDuJour('gyp',c,L.cc,'G'),pv,ts:Math.round(Date.now()/1000)});
   let svg;try{svg=GQR.svgQR(txt)}catch(e){svg='<p class="alerte">Liste trop longue pour un seul QR.</p>'}
   const d=document.createElement('div');d.className='voile';
   d.innerHTML=`<div class="fen" style="max-width:640px"><h2>Classe ${esc(c)} · gymnastique</h2><p>Appli élève : « QR de la classe (prof) », ou Groupe → « Scanner le QR de la classe ».</p><p class="small" style="background:#fff7ed;border-left:6px solid #ea580c;padding:6px 10px;border-radius:8px">🎬 <b>Au premier cours</b> : faites télécharger les vidéos avec le Wi-Fi du lycée (Accueil de l’appli élève → « Télécharger les vidéos », environ 90 Mo). Sinon certaines ne se chargeront pas au gymnase.</p><p class="small muted">Le QR contient aussi vos validations P : elles s’ajoutent sur les tablettes, et un groupe qui a oublié son code retrouve ses niveaux en recréant son carnet avec la liste de la classe.</p><div class="qrbox">${svg}</div><button class="bt noir" type="button" style="margin-top:12px">Fermer</button></div>`;
@@ -262,6 +262,7 @@ function vClasses(){
   ${C.map(c=>{const L=DB.classes[c];return `<section class="carte"><h3>${esc(c)} · ${L.eleves.length} élèves</h3>
    <label class="small"><b>Lien de dépôt Nuage</b> (facultatif, « Demande de fichier »)</label><input type="text" data-lien="${esc(c)}" value="${esc(L.lien||'')}" placeholder="https://nuage…">
    <label class="coche"><input type="checkbox" data-barres="${esc(c)}" ${L.barres?'checked':''}> Afficher les barres asymétriques aux élèves</label>
+   <label class="coche"><input type="checkbox" data-liaisons="${esc(c)}" ${L.liaisons?'checked':''}> Afficher les éléments de liaison aux élèves <span class="small muted">(cachés en début de cycle)</span></label>
    <label class="coche"><input type="checkbox" data-tc="${esc(c)}" ${L.tc?'checked':''}> 🔑 Code du cours pour valider E à <b>tous</b> les niveaux (sinon : seulement les niveaux ⚠️)</label>
    <div class="rangee" style="margin-top:10px"><button class="bt act" type="button" data-act="qrclasse" data-v="${esc(c)}">▦ QR de démarrage</button><button class="bt" type="button" data-act="codecours" data-v="${esc(c)}">🔑 Code du cours</button><button class="bt mini danger" type="button" data-act="suppclasse" data-v="${esc(c)}">Supprimer la classe</button></div></section>`}).join('')}
 <section class="carte"><h3>🔑 Un groupe a oublié son code</h3><ol class="small"><li>Le groupe touche son carnet, puis « Code oublié ? » : un QR s’affiche.</li><li>Scanne-le avec <b>📷 Valider un élève</b> ou <b>Recevoir → Scanner</b> : le code à 4 chiffres s’affiche en grand.</li><li>Dis-le au groupe. Rien n’est perdu.</li></ol><p class="small muted">Carnet trop ancien (pas de QR s’affiche) : le groupe en crée un nouveau, scanne le QR de la classe ; ses validations envoyées sont chez toi.</p></section>
@@ -325,6 +326,7 @@ document.addEventListener('change',async ev=>{
   else if(t.dataset.lien){DB.classes[t.dataset.lien].lien=t.value.trim();sauver()}
   else if(t.dataset.excl){const E=DB.el[t.dataset.e];if(E){const n=+t.dataset.excl,s=new Set(E.excl||[]);t.checked?s.add(n):s.delete(n);E.excl=[...s].sort();sauver();rendre()}}
   else if(t.dataset.tc){DB.classes[t.dataset.tc].tc=t.checked;sauver();alert('Refaites scanner le QR de la classe pour que les téléphones le prennent en compte.')}
+  else if(t.dataset.liaisons){DB.classes[t.dataset.liaisons].liaisons=t.checked;sauver();alert('Refaites scanner le QR de la classe pour que les tablettes le prennent en compte.')}
   else if(t.dataset.barres){DB.classes[t.dataset.barres].barres=t.checked;sauver();alert('Refaites scanner le QR de la classe pour que les tablettes le prennent en compte.')}
 });
 if(/[?&]demo\b/.test(location.search))ouvrirDemo();
