@@ -56,7 +56,7 @@ function importerObjet(o,source){
     if(x.en)E.ench=x.en;
     if(x.x)E.rate=x.x;
     if(x.qz)E.quiz=1;
-    E.maj=Math.max(E.maj,o.ts*1000);n++;
+    E.maj=Math.max(E.maj,o.ts*1000);E.recu=Date.now();n++;
   });
   DB.recus[(o.g||'')+'|'+o.ts]=1;
   journal('Fiche reçue ('+source+') : '+c+' · '+(o.el||[]).map(x=>prenom(x.n)).join(', '));
@@ -181,15 +181,22 @@ function rendre(){
 }
 function cellule(E,a){const p=meilleur(E,a,'p'),e=meilleur(E,a,'e');
   return `<td>${p?`<span class="L L${p}" style="width:36px;height:36px;font-size:20px">${p}</span>`:'<span class="muted">–</span>'}${e&&e!==p?`<span class="eseul" title="validé E par un camarade, à confirmer"><span class="L L${e}">${e}</span><small>E</small></span>`:''}</td>`}
+/* Suivi des scans (comme en athlétisme) : reçu aujourd'hui / un autre jour / jamais */
+const jourDe=t=>{const d=new Date(t);return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()};
+function recuEtat(E){const t=E&&(E.recu||E.maj);if(!t)return 'non';return jourDe(t)===jourDe(Date.now())?'auj':'avant'}
+function pastille(E){const s=recuEtat(E);return `<span class="pst ${s}" title="${s==='auj'?'reçu aujourd’hui':s==='avant'?'reçu un autre jour':'pas encore reçu'}"></span>`}
+function resteHTML(){if(!DB.classe)return '';const L=elevesClasse(DB.classe).filter(x=>!x.horsListe&&x.E.st!=='disp'),m=L.filter(x=>recuEtat(x.E)!=='auj');
+  return m.length?`<b>${L.length-m.length} / ${L.length} reçus aujourd’hui.</b> Il manque : ${m.map(x=>esc(x.nom)).join(', ')}`:`<b>✓ Toute la classe ${esc(DB.classe)} est reçue aujourd’hui.</b>`}
 function vTableau(){
   if(!DB.classe)return `<h2>Bienvenue</h2>${AVT('prof','Bienvenue ! Commence par importer la liste Pronote de ta classe.')}<p class="carte">Commencez par importer une liste Pronote (onglet Réglages), puis montrez le QR de la classe aux tablettes.</p>${carteDemo()}`;
   const L=elevesClasse(DB.classe);
-  return `<h2>Classe ${esc(DB.classe)}</h2>
+  const nAuj=L.filter(x=>!x.horsListe&&recuEtat(x.E)==='auj').length,nTot=L.filter(x=>!x.horsListe).length;
+  return `<h2>Classe ${esc(DB.classe)}</h2><p class="suivi"><span class="pst auj"></span><b>${nAuj} / ${nTot}</b> reçus aujourd’hui <span class="pst avant"></span>un autre jour <span class="pst non"></span>pas encore reçu</p>
   <p class="small muted">Lettre = meilleur niveau validé <b>P</b> par atelier · petite lettre en pointillés = niveau plus haut validé seulement <b>E</b> par un camarade (à confirmer). Touchez un élève pour sa fiche.</p>
   ${basculeVue()}
   <div class="rangee"><button class="bt mini" type="button" data-act="qrclasse">▦ QR de la classe</button><button class="bt mini" type="button" data-act="rotation">🔄 Rotation des ateliers</button><button class="bt mini" type="button" data-act="csv">⬇ Export CSV (note)</button><button class="bt mini" type="button" data-act="pronote">📋 Notes pour Pronote</button><button class="bt mini" type="button" data-act="imprimer">🖨 Imprimer</button></div>
   <div style="overflow-x:auto;margin-top:10px"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}" style="box-shadow:inset 0 -8px 0 ${COUL[a.n]}">${a.n}<br><span class="small">${esc(a.court)}</span></th>`).join('')}<th>Items<br><span class="small">/16</span></th><th>Part.<br><span class="small">/4</span></th><th>Note<br><span class="small">/20</span></th></tr></thead>
-  <tbody>${L.map(x=>{const N=note(x.E,DB.classe);return `<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left"><b>${esc(x.nom)}</b>${rafale(x.E)?' <span title="Plusieurs validations E en quelques minutes : à vérifier">⚡</span>':''}${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.st==='disp'?' <span class="small muted">(dispensé)</span>':x.E.st==='ip'?' <span class="small muted">(inapte partiel)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td>${fmt(N.items)}</td><td>${fmt(N.part)}${N.partAuto?'<sup title="proposée par l’appli">*</sup>':''}</td><td><b>${fmt(N.total)}</b></td></tr>`}).join('')}</tbody></table></div>
+  <tbody>${L.map(x=>{const N=note(x.E,DB.classe);return `<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left">${pastille(x.E)}<b>${esc(x.nom)}</b>${rafale(x.E)?' <span title="Plusieurs validations E en quelques minutes : à vérifier">⚡</span>':''}${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.st==='disp'?' <span class="small muted">(dispensé)</span>':x.E.st==='ip'?' <span class="small muted">(inapte partiel)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td>${fmt(N.items)}</td><td>${fmt(N.part)}${N.partAuto?'<sup title="proposée par l’appli">*</sup>':''}</td><td><b>${fmt(N.total)}</b></td></tr>`}).join('')}</tbody></table></div>
   <p class="small muted">⚡ = au moins ${RAFALE.n} validations E en moins de ${RAFALE.min} min : allez voir. * = participation proposée par l’appli (observations justes : E confirmés ensuite par votre P), à confirmer dans la fiche de l’élève. Barème : onglet Réglages.</p>`;
 }
 function vEleve(k){
@@ -271,7 +278,7 @@ document.addEventListener('click',async ev=>{
       const w=E.v[v]=E.v[v]||{};if(w.p){if(!confirm('Retirer la validation P ?'))return;delete w.p;delete w.pp}else{w.p=Date.now();w.pp=1;if(!w.e)w.e=w.p}
       if(!w.e&&!w.p&&!w.deb)delete E.v[v];sauver();rendre();break}
     case 'scanvalid':scanValidation();break;
-    case 'scan':GQR.scanner(async t=>{const r=importerObjet(await GQR.decoder(t),'QR');rendre();return r},{continu:true,titre:'Fiches des groupes',aide:'Scannez les QR des tablettes les uns après les autres.'});break;
+    case 'scan':GQR.scanner(async t=>{const r=importerObjet(await GQR.decoder(t),'QR');rendre();return r},{continu:true,titre:'Fiches des groupes',aide:'Scannez les QR des tablettes les uns après les autres.',reste:resteHTML});break;
     case 'qrclasse':qrDemarrage(v||DB.classe);break;
     case 'codecours':{const c=v||DB.classe,L=DB.classes[c]=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};if(!L.cc){L.cc=EPSCode.nouvelleCle();sauver()}EPSCode.prof({app:'gyp',classe:c,cle:L.cc,seances:[{v:'G',n:'Gym'}]});break}
     case 'csv':exportCSV();break;
