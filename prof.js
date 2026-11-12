@@ -58,6 +58,9 @@ function importerObjet(o,source){
     if(x.qz)E.quiz=1;
     E.maj=Math.max(E.maj,o.ts*1000);E.recu=Date.now();n++;
   });
+  /* composition du groupe (vue « Par groupe ») */
+  DB.groupes=DB.groupes||{};{const noms=(o.el||[]).map(x=>x.n),gk=norm(c)+'|'+(o.g||noms.map(norm).sort().join('+')),G=DB.groupes[gk]||{};
+    if(!G.maj||o.ts*1000>=G.maj)DB.groupes[gk]={classe:c,noms,maj:o.ts*1000,recu:Date.now(),lt:o.lt||G.lt||''}}
   DB.recus[(o.g||'')+'|'+o.ts]=1;
   journal('Fiche reçue ('+source+') : '+c+' · '+(o.el||[]).map(x=>prenom(x.n)).join(', '));
   if(!DB.classe)DB.classe=c;sauver();
@@ -177,7 +180,7 @@ function rendre(){
   $('#onglets').innerHTML=T.map(([k,i,l])=>`<button type="button" class="${DB.vue===k?'ici':''}" data-act="vue" data-v="${k}"><i>${i}</i>${l}${k==='valider'&&nbAValider()?' ('+nbAValider()+')':''}</button>`).join('');
   $('#sous').textContent=DB.classe?'Classe '+DB.classe:'Lycée Georges Pompidou';
   const sel=C.length?`<div class="qui">${C.map(c=>`<button type="button" class="${c===DB.classe?'ici':''}" data-act="classe" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>`:'';
-  $('#app').innerHTML=bandeauDemo()+(DB.eleve&&DB.vue==='tableau'?vEleve(DB.eleve):{tableau:()=>sel+(DB.vueAt?vParAtelier():vTableau()),valider:()=>sel+vValider(),recevoir:()=>sel+vRecevoir(),classes:vClasses}[DB.vue]());
+  $('#app').innerHTML=bandeauDemo()+(DB.eleve&&DB.vue==='tableau'?vEleve(DB.eleve):{tableau:()=>sel+(DB.vueGr?vParGroupe():DB.vueAt?vParAtelier():vTableau()),valider:()=>sel+vValider(),recevoir:()=>sel+vRecevoir(),classes:vClasses}[DB.vue]());
 }
 function cellule(E,a){const p=meilleur(E,a,'p'),e=meilleur(E,a,'e');
   return `<td>${p?`<span class="L L${p}" style="width:36px;height:36px;font-size:20px">${p}</span>`:'<span class="muted">–</span>'}${e&&e!==p?`<span class="eseul" title="validé E par un camarade, à confirmer"><span class="L L${e}">${e}</span><small>E</small></span>`:''}</td>`}
@@ -288,7 +291,8 @@ document.addEventListener('click',async ev=>{
     case 'pronote':notesPronote();break;
     case 'imprimer':window.print();break;
     case 'tour':DB.tourAt=+v;sauver();rendre();break;
-    case 'vueat':DB.vueAt=+v||0;sauver();rendre();break;
+    case 'vueat':DB.vueAt=+v||0;DB.vueGr=0;sauver();rendre();break;
+    case 'vuegr':DB.vueGr=1;DB.vueAt=0;sauver();rendre();break;
     case 'statut':{const E=DB.el[b.dataset.e];if(!E)return;if(v)E.st=v;else{delete E.st;delete E.excl}sauver();rendre();break}
     case 'part':{const E=DB.el[b.dataset.e];if(!E)return;if(v==='')delete E.part;else E.part=+v;sauver();rendre();break}
     case 'bilanj':DB.bilanJ=+v;rendre();break;

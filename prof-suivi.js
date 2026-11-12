@@ -35,7 +35,7 @@ function rafale(E){
   for(let i=0;i+RAFALE.n-1<T.length;i++)if(T[i+RAFALE.n-1]-T[i]<=RAFALE.min*60000)return new Date(T[i]).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   return '';
 }
-function basculeVue(){return `<div class="qui"><button type="button" class="${DB.vueAt?'':'ici'}" data-act="vueat" data-v="0">Par élève</button><button type="button" class="${DB.vueAt?'ici':''}" data-act="vueat" data-v="${DB.vueAt||1}">Par atelier</button></div>`}
+function basculeVue(){return `<div class="qui"><button type="button" class="${DB.vueAt||DB.vueGr?'':'ici'}" data-act="vueat" data-v="0">Par élève</button><button type="button" class="${DB.vueGr?'ici':''}" data-act="vuegr">Par groupe</button><button type="button" class="${DB.vueAt&&!DB.vueGr?'ici':''}" data-act="vueat" data-v="${DB.vueAt||1}">Par atelier</button></div>`}
 function vParAtelier(){
   const a=GYM.ateliers[(DB.vueAt||1)-1],L=elevesClasse(DB.classe),auj=new Date().toDateString();
   const col=lv=>L.filter(x=>meilleur(x.E,a.n,'p')===lv);
@@ -153,3 +153,19 @@ async function afficherRotation(){
   };
   maj();clearInterval(ROT_T);ROT_T=setInterval(maj,1000);
 }
+
+/* ---------- Vue « Par groupe » : une carte par groupe (dernière fiche reçue de chaque élève) ---------- */
+function vParGroupe(){const c=DB.classe,L=elevesClasse(c),byK=new Map(L.map(x=>[norm(x.nom),x]));
+  const G=Object.values(DB.groupes||{}).filter(g=>norm(g.classe)===norm(c)).sort((a,b)=>b.maj-a.maj);
+  const pris=new Set(),cartes=[];
+  G.forEach(g=>{const m=g.noms.map(n=>byK.get(norm(n))).filter(x=>x&&!pris.has(x.k));if(!m.length)return;m.forEach(x=>pris.add(x.k));cartes.push({g,m})});
+  cartes.sort((a,b)=>(a.g.lt?0:1)-(b.g.lt?0:1)||String(a.g.lt||'').localeCompare(String(b.g.lt||''),'fr',{numeric:true})||a.m[0].nom.localeCompare(b.m[0].nom,'fr'));
+  const seuls=L.filter(x=>!pris.has(x.k)&&!x.horsListe);
+  const aConf=E=>Object.values(E.v||{}).filter(v=>v.e&&!v.p).length;
+  const tab=m=>`<div style="overflow-x:auto"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}" style="box-shadow:inset 0 -6px 0 ${COUL[a.n]}">${a.n}</th>`).join('')}<th title="validations E à confirmer">E à<br>confirmer</th></tr></thead>
+    <tbody>${m.map(x=>`<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left">${pastille(x.E)}<b>${esc(x.nom)}</b></td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td>${aConf(x.E)||'–'}</td></tr>`).join('')}</tbody></table></div>`;
+  const rec=t=>{const d=new Date(t);return d.toDateString()===new Date().toDateString()?'fiche reçue aujourd’hui à '+d.getHours()+' h '+String(d.getMinutes()).padStart(2,'0'):'dernière fiche le '+d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})};
+  return `<h2>Classe ${esc(c)} · par groupe</h2>${basculeVue()}
+  <p class="small muted">${cartes.length} groupe${cartes.length>1?'s':''} d’après les fiches reçues. Touchez un élève pour sa fiche. Lettre = meilleur niveau P · pointillés = E à confirmer.</p>
+  <div class="grgrid">${cartes.map(({g,m})=>`<section class="carte grcarte"><h3>${g.lt?`<span class="grlt">${esc(g.lt)}</span>`:''}${esc(m.map(x=>prenom(x.nom)).join(' · '))}</h3><p class="small muted">${rec(g.recu||g.maj)}</p>${tab(m)}</section>`).join('')||'<p class="carte muted">Aucune fiche de groupe reçue pour cette classe.</p>'}</div>
+  ${seuls.length?`<section class="carte"><h3>Sans groupe reçu · ${seuls.length}</h3><p class="small muted">Élèves de la liste dont aucune fiche de groupe n’est encore arrivée (ou reçues avant cette version).</p>${tab(seuls)}</section>`:''}`}
