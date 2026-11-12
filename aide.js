@@ -10,6 +10,7 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 </ol><p class="astuce">Une seule fois après cette mise à jour : refaites scanner le <b>QR de démarrage</b> (il apporte la clé de la classe). Tant qu’un téléphone ne l’a pas rescanné, il n’est pas verrouillé.</p>`},
 
 {t:'Mise en place (une fois par classe)',html:`<ol>
+<li><b>Premier cours</b> : Classe → « QR de la classe » → <b>🖨 Affiche du premier cours</b>. Une page A4 avec les deux QR (installer l’appli, entrer dans la classe) et les étapes : affichez-la, les groupes s’installent seuls. Le code du cours contenu dans ce QR n’est valable que le jour même : il ouvre la séance sans code à taper.</li>
 <li><b>Réglages → Importer une liste Pronote</b> (xlsx, xls ou csv). Avec une colonne « Classe », plusieurs classes d’un coup.</li><li><b>Toutes les classes d’un coup</b> : le fichier fait par la page « Mes classes » du portail mon-EPS. <b>Élève arrivé en cours d’année</b> : collez « NOM Prénom » avec le nom de la classe → « Ajouter ces élèves ». Classe déjà présente : l’appli demande toujours « Ajouter » ou « Remplacer la liste ». Ensuite, faites rescanner le QR de démarrage.</li>
 <li>Facultatif : <b>lien de dépôt Nuage</b> de la classe, et la case <b>barres asymétriques</b> (cachées par défaut).</li>
 <li><span class="bouton">▦ QR de démarrage</span> : chaque tablette le scanne (appli élève → « QR de la classe »).</li>

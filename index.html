@@ -162,6 +162,11 @@ input[type=number],input[type=date]{min-height:48px;padding:6px 10px;border-radi
 .demo-bandeau span{flex:1}.demo-carte{border-style:dashed}
 .pst{display:inline-block;width:14px;height:14px;border-radius:50%;margin:0 6px 0 2px;vertical-align:-2px;border:2px solid #fff;box-shadow:0 0 0 1px #0003}.pst.auj{background:#16a34a}.pst.avant{background:#f59e0b}.pst.non{background:#dc2626}.suivi{background:var(--sol);border-radius:12px;padding:8px 12px}
 .grgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:12px}@media (max-width:500px){.grgrid{grid-template-columns:1fr}}.grcarte h3{margin:0 0 2px}.grlt{display:inline-block;min-width:34px;text-align:center;background:var(--act,#0f766e);color:#fff;border-radius:8px;padding:2px 8px;margin-right:8px}
+#affiche{display:none}
+@media print{body.impr-affiche>*:not(#affiche){display:none!important}body.impr-affiche #affiche{display:block;color:#000;background:#fff;font-size:15pt}
+ #affiche h1{font-size:22pt;margin:0 0 10mm}#affiche .aff2{display:grid;grid-template-columns:1fr 1fr;gap:10mm}#affiche h2{font-size:18pt;margin:0 0 4mm}
+ #affiche .qrblanc{width:75mm;margin:0 auto 4mm}#affiche ol{padding-left:6mm}#affiche li{margin:2mm 0}#affiche .pied{margin-top:8mm;font-size:11pt}
+ @page{size:A4 landscape;margin:12mm}}
 </style>
 <link rel="stylesheet" href="eps-charte-v1.css">
 <style>/* Charte v1 : couleur de la gym (à valider) */ :root{--act:#0f766e;--act-fonce:#0b4f4a;--act-pale:#dff2ef}</style>

@@ -163,7 +163,17 @@ async function qrDemarrage(c){
   const d=document.createElement('div');d.className='voile';
   d.innerHTML=`<div class="fen" style="max-width:640px"><h2>Classe ${esc(c)} · gymnastique</h2><p>Appli élève : « QR de la classe (prof) », ou Groupe → « Scanner le QR de la classe ».</p><p class="small" style="background:#fff7ed;border-left:6px solid #ea580c;padding:6px 10px;border-radius:8px">🎬 <b>Au premier cours</b> : faites télécharger les vidéos avec le Wi-Fi du lycée (Accueil de l’appli élève → « Télécharger les vidéos », environ 90 Mo). Sinon certaines ne se chargeront pas au gymnase.</p><p class="small muted">Le QR contient aussi vos validations P : elles s’ajoutent sur les tablettes, et un groupe qui a oublié son code retrouve ses niveaux en recréant son carnet avec la liste de la classe.</p><div class="qrbox">${svg}</div><button class="bt noir" type="button" style="margin-top:12px">Fermer</button></div>`;
   d.querySelector('button').onclick=()=>d.remove();document.body.appendChild(d);
+  const bA=document.createElement('button');bA.className='bt act';bA.type='button';bA.textContent='🖨 Affiche du premier cours (A4)';bA.style.marginTop='10px';bA.onclick=()=>afficheCours(c,svg);d.querySelector('.fen').appendChild(bA);
 }
+/* Affiche A4 : QR de l'appli (appareil photo) + QR de la classe (dans l'appli), avec les étapes */
+function afficheCours(c,svgClasse){const URL_APP='https://yannickdartois-hue.github.io/gym-eleves/';
+  const a=document.createElement('div');a.id='affiche';
+  a.innerHTML=`<h1>Gymnastique · premier cours · ${esc(c)}</h1><div class="aff2">
+   <div><h2>① Installer l’appli</h2>${GQR.svgQR(URL_APP)}<ol><li>Scannez ce QR avec <b>l’appareil photo</b>.</li><li>Ajoutez l’appli à l’<b>écran d’accueil</b> (iPhone : Partager → « Sur l’écran d’accueil » ; Android : ⋮ → « Installer »).</li><li><b>Ouvrez l’appli avec son icône</b> et touchez « Télécharger les vidéos » (Wi-Fi).</li></ol></div>
+   <div><h2>② Entrer dans la classe</h2>${svgClasse}<ol><li>Dans l’appli : « 📷 Scanner le QR de la classe ».</li><li>« Créer notre groupe » : lettre du groupe, code à 4 chiffres (notez-le !).</li><li>Cochez vos noms dans la liste.</li></ol></div></div>
+   <p class="pied">Le QR ② donne la liste de la classe ; le code du cours qu’il contient n’est valable qu’aujourd’hui (${new Date().toLocaleDateString('fr-FR')}).</p>`;
+  document.body.appendChild(a);document.body.classList.add('impr-affiche');
+  const fin=()=>{document.body.classList.remove('impr-affiche');a.remove();window.removeEventListener('afterprint',fin)};window.addEventListener('afterprint',fin);setTimeout(()=>window.print(),200)}
 
 /* ---------- Vues ---------- */
 function elevesClasse(c){
