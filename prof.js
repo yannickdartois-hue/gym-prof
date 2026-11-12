@@ -31,9 +31,17 @@ const etat=(E,k)=>{const v=E.v[k];return v&&v.p?'p':v&&v.e?'e':''};
 function meilleur(E,a,q){let b='';NIVS.forEach(n=>{const s=etat(E,a+n);if(q==='p'?s==='p':s)b=n});return b}
 
 /* ---------- Réception des fiches de groupe ---------- */
+/* Classe d'une fiche : même classe malgré majuscules/espaces ; sans classe (ou classe inconnue) : la classe
+   dont la liste contient le plus de ces élèves. Évite les groupes « isolés » hors de leur classe. */
+function classeDe(c,noms){const K=Object.keys(DB.classes),nc=norm(c);const ex=K.find(k=>norm(k)===nc);if(ex)return ex;
+  let best=null,bn=0;K.forEach(k=>{const L=new Set((DB.classes[k].eleves||[]).map(norm));const n=noms.filter(x=>L.has(norm(x))).length;if(n>bn){bn=n;best=k}});
+  return best||c||'Sans classe'}
+function rangerIsoles(){let n=0;Object.entries(DB.el).forEach(([k,E])=>{if(DB.classes[E.classe])return;const c=classeDe(E.classe,[E.nom]);if(c&&DB.classes[c]&&c!==E.classe){const k2=cle(c,E.nom),F=DB.el[k2];
+    if(F){Object.entries(E.v).forEach(([nv,v])=>{const w=F.v[nv]||{};if(v.e&&(!w.e||v.e>w.e)){w.e=v.e;w.par=v.par}if(v.p&&!w.p){w.p=v.p;w.pp=v.pp}if(v.deb)w.deb=1;F.v[nv]=w});F.maj=Math.max(F.maj||0,E.maj||0)}
+    else DB.el[k2]=Object.assign(E,{classe:c});delete DB.el[k];n++}});if(n){journal(n+' élève(s) rangé(s) dans leur classe');sauver()}}
 function importerObjet(o,source){
   if(!o||o.a!=='GYM'||o.t!=='G')throw new Error('Ce n’est pas une fiche de groupe gym.');
-  const c=o.c||'?';let n=0;
+  const c=classeDe(o.c||'',(o.el||[]).map(x=>x.n));let n=0;
   (o.el||[]).forEach(x=>{
     const E=eleve(c,x.n);
     GYM.ateliers.forEach((a,ia)=>NIVS.forEach((nv,in_)=>{
@@ -163,6 +171,7 @@ function elevesClasse(c){
 }
 function classesConnues(){return [...new Set([...Object.keys(DB.classes),...Object.values(DB.el).map(e=>e.classe)])].sort()}
 function rendre(){
+  try{rangerIsoles()}catch(e){}
   const C=classesConnues();if(!DB.classe&&C.length)DB.classe=C[0];
   const T=[['tableau','📊','Classe'],['valider','✅','À valider'],['recevoir','📥','Recevoir'],['classes','⚙️','Réglages']];
   $('#onglets').innerHTML=T.map(([k,i,l])=>`<button type="button" class="${DB.vue===k?'ici':''}" data-act="vue" data-v="${k}"><i>${i}</i>${l}${k==='valider'&&nbAValider()?' ('+nbAValider()+')':''}</button>`).join('');
