@@ -235,6 +235,7 @@ function vClasses(){
    <label class="coche"><input type="checkbox" data-barres="${esc(c)}" ${L.barres?'checked':''}> Afficher les barres asymétriques aux élèves</label>
    <label class="coche"><input type="checkbox" data-tc="${esc(c)}" ${L.tc?'checked':''}> 🔑 Code du cours pour valider E à <b>tous</b> les niveaux (sinon : seulement les niveaux ⚠️)</label>
    <div class="rangee" style="margin-top:10px"><button class="bt act" type="button" data-act="qrclasse" data-v="${esc(c)}">▦ QR de démarrage</button><button class="bt" type="button" data-act="codecours" data-v="${esc(c)}">🔑 Code du cours</button><button class="bt mini danger" type="button" data-act="suppclasse" data-v="${esc(c)}">Supprimer la classe</button></div></section>`}).join('')}
+<section class="carte"><h3>🔑 Un groupe a oublié son code</h3><ol class="small"><li>Le groupe touche son carnet, puis « Code oublié ? » : un QR s’affiche.</li><li>Scanne-le avec <b>📷 Valider un élève</b> ou <b>Recevoir → Scanner</b> : le code à 4 chiffres s’affiche en grand.</li><li>Dis-le au groupe. Rien n’est perdu.</li></ol><p class="small muted">Carnet trop ancien (pas de QR s’affiche) : le groupe en crée un nouveau, scanne le QR de la classe ; ses validations envoyées sont chez toi.</p></section>
   ${vBareme()}
   ${carteDemo()}
   <section class="carte"><h3>Sauvegarde</h3><div class="rangee"><button class="bt" type="button" data-act="sauvegarde">⬇ Télécharger une sauvegarde</button><label class="bt" for="restau">⬆ Restaurer</label><input id="restau" type="file" accept=".json" hidden></div></section>`;
