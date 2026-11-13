@@ -43,6 +43,10 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 <li><b>Démo</b> (Réglages) : classe fictive de 24 élèves, vos données ne sont pas touchées. </li>
 <li>Bandeau jaune « Nouvelle version » : <span class="bouton">Mettre à jour</span>.</li>
 </ul>`},
+{t:'Groupes et classes à corriger',html:`<ul><li><b>Par groupe</b> : chaque fiche reçue range ses élèves dans le groupe de la tablette (numéro 1 à 8). Pour les fiches reçues avant novembre 2026, les élèves arrivés dans la <b>même fiche</b> forment un groupe « Reconstitué ».</li>
+<li><span class="bouton">✎ Organiser les groupes</span> : un menu devant chaque élève (Groupe 1 à 8, Aucun, Auto). « Garder les groupes actuels » numérote les groupes reconstitués.</li>
+<li>Sur la fiche d’un élève, carte <b>Groupe et classe</b> : changer son groupe, ou le <b>déplacer dans une autre classe</b> (élèves de la classe « ? »). Choisissez son nom dans la liste : ses validations y sont réunies, rien n’est perdu. L’onglet « ? » disparaît quand il est vide.</li>
+<li>Élève qui change vraiment de groupe : sur l’ancienne tablette « Retirer », sur la nouvelle « Ajouter un élève » avec le même nom. Votre choix manuel tient jusqu’à ce qu’une fiche plus récente arrive de sa tablette.</li></ul>`},
 {t:'Personnages des élèves',html:`<ul><li>Chaque élève choisit un personnage gymnaste sur sa fiche ; il arrive avec la fiche du groupe (QR ou fichier).</li>
 <li>Tableau de classe : vignette devant le nom. Fiche élève : le personnage animé, sa forme et le nombre débloqué.</li>
 <li>Règle : 1 personnage au départ, +1 tous les 3 niveaux validés (E ou P), 12 en tout. La forme (taille, figure) suit le meilleur niveau validé <b>P</b> : A–B, C–D, E–F. Les P de cet outil font foi.</li></ul>`}
