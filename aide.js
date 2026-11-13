@@ -42,6 +42,10 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 <li>Les données restent sur cet appareil. <b>Réglages → Sauvegarde</b> : téléchargez-la régulièrement.</li>
 <li><b>Démo</b> (Réglages) : classe fictive de 24 élèves, vos données ne sont pas touchées. </li>
 <li>Bandeau jaune « Nouvelle version » : <span class="bouton">Mettre à jour</span>.</li>
-</ul>`}
+</ul>`},
+{t:'Personnages des élèves',html:`<ul><li>Chaque élève choisit un personnage gymnaste sur sa fiche ; il arrive avec la fiche du groupe (QR ou fichier).</li>
+<li>Tableau de classe : vignette devant le nom. Fiche élève : le personnage animé, sa forme et le nombre débloqué.</li>
+<li>Règle : 1 personnage au départ, +1 tous les 3 niveaux validés (E ou P), 12 en tout. La forme (taille, figure) suit le meilleur niveau validé <b>P</b> : A–B, C–D, E–F. Les P de cet outil font foi.</li></ul>`}
+
 ]}
 ]};
