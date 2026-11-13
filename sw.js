@@ -1,7 +1,7 @@
 /* Hors ligne. À chaque mise en ligne : augmenter VERSION (gym-prof-vN). */
-const VERSION='gym-prof-v1';
+const VERSION='gym-prof-v1.0';
 // Toutes les applis partagent le même stockage (même adresse github.io) : on n'efface QUE les anciennes versions de CETTE appli.
-const MES_CACHES=/^gym-prof-v\d+$/;
+const MES_CACHES=/^gym-prof-v\d+(?:\.\d+)?$/;
 const sous3s=p=>{p.catch(()=>{});return Promise.race([p,new Promise((_,non)=>setTimeout(()=>non(new Error('réseau lent')),3000))])};
 const FICHIERS=['./','index.html','prof.js','prof-valid.js','prof-oubli.js','avatars-gym.js','prof-avatar.js','prof-groupes.js','eps-code.js','eps-maj.js','eps-coffre.js','eps-garde.js','eps-avatars.js','img/avatars/prof.webp','img/avatars/tableau.webp','aide.js','eps-aide.js','prof-demo.js','prof-suivi.js','donnees.js','qrcode.js','jsqr.js','scan.js','xlsx.js','jszip.js','eps-charte-v1.css','manifest.webmanifest',
   'icon-32.png','icon-180.png','icon-192.png','icon-512.png','polices/archivo.woff2','polices/atkinson-400.woff2','polices/atkinson-700.woff2'];
