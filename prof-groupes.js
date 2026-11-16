@@ -108,4 +108,5 @@ document.addEventListener('change',ev=>{const s=ev.target.closest('select');if(!
 },true);
 const css=document.createElement('style');css.textContent='select[data-grman],#mv-cl,#mv-nom{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;max-width:100%}';document.head.appendChild(css);
 try{rendre()}catch(e){}
+window.GYMGroupesDe=groupesDe; /* v1.1 : lu par prof-qr-groupes.js */
 })();
