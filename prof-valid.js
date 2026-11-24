@@ -25,7 +25,7 @@ const msgSigne=o=>['GYMP',o.c,o.n,o.k,o.x,o.p].join('|');
 
 function scanValidation(){
   GQR.scanner(async t=>{
-    const o=await GQR.decoder(t);
+    const o=await lireTexteGroupe(t);if(o.partiel)return o.partiel;
     if(o.t==='G'){const r=importerObjet(o,'QR');rendre();return r}
     if(o.t!=='V')throw new Error('Ce n’est pas un QR « Montrer au professeur ».');
     setTimeout(()=>ouvrirDemande(o),250);return 'Demande de '+o.n+' · '+o.k;

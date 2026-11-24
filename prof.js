@@ -39,7 +39,17 @@ function classeDe(c,noms){const K=Object.keys(DB.classes),nc=norm(c);const ex=K.
 function rangerIsoles(){let n=0;Object.entries(DB.el).forEach(([k,E])=>{if(DB.classes[E.classe])return;const c=classeDe(E.classe,[E.nom]);if(c&&DB.classes[c]&&c!==E.classe){const k2=cle(c,E.nom),F=DB.el[k2];
     if(F){Object.entries(E.v).forEach(([nv,v])=>{const w=F.v[nv]||{};if(v.e&&(!w.e||v.e>w.e)){w.e=v.e;w.par=v.par}if(v.p&&!w.p){w.p=v.p;w.pp=v.pp}if(v.deb)w.deb=1;F.v[nv]=w});F.maj=Math.max(F.maj||0,E.maj||0)}
     else DB.el[k2]=Object.assign(E,{classe:c});delete DB.el[k];n++}});if(n){journal(n+' élève(s) rangé(s) dans leur classe');sauver()}}
+/* v1.8 : QR de groupe allégé (v:2, appli élève v1.17) : dates en minutes avant l'envoi, observateur = numéro dans le groupe.
+   On le remet au format complet avant de l'importer : rien ne change dans les données. */
+function deV2(o){if(!o||o.v!==2||!Array.isArray(o.el))return o;
+  o.el.forEach(x=>{const d={};Object.entries(x.d||{}).forEach(([k,v])=>{d[k]=[o.ts-(+v[0]||0)*60,typeof v[1]==='number'?((o.el[v[1]]||{}).n||''):(v[1]||''),0]});x.d=d});o.v=1;return o}
+/* QR de groupe en plusieurs morceaux (GYMQ:id:i/n:…) : on les rassemble, dans n'importe quel ordre */
+const MORCEAUX={};
+async function lireTexteGroupe(t){t=String(t||'').trim();const m=/^GYMQ:([a-z0-9]+):(\d+)\/(\d+):(.*)$/.exec(t);
+  if(!m)return GQR.decoder(t);const M=MORCEAUX[m[1]]=MORCEAUX[m[1]]||{n:+m[3],p:{}};M.p[+m[2]]=m[4];const nb=Object.keys(M.p).length;
+  if(nb<M.n)return {partiel:`QR ${nb} sur ${M.n} lu : montrez le suivant.`};delete MORCEAUX[m[1]];return GQR.decoder(Array.from({length:M.n},(_,i)=>M.p[i+1]).join(''))}
 function importerObjet(o,source){
+  o=deV2(o);
   if(!o||o.a!=='GYM'||o.t!=='G')throw new Error('Ce n’est pas une fiche de groupe gym.');
   const c=classeDe(o.c||'',(o.el||[]).map(x=>x.n));let n=0;
   (o.el||[]).forEach(x=>{
@@ -292,7 +302,7 @@ document.addEventListener('click',async ev=>{
       const w=E.v[v]=E.v[v]||{};if(w.p){if(!confirm('Retirer la validation P ?'))return;delete w.p;delete w.pp}else{w.p=Date.now();w.pp=1;if(!w.e)w.e=w.p}
       if(!w.e&&!w.p&&!w.deb)delete E.v[v];sauver();rendre();break}
     case 'scanvalid':scanValidation();break;
-    case 'scan':GQR.scanner(async t=>{const r=importerObjet(await GQR.decoder(t),'QR');rendre();return r},{continu:true,titre:'Fiches des groupes',aide:'Scannez les QR des tablettes les uns après les autres.',reste:resteHTML});break;
+    case 'scan':GQR.scanner(async t=>{const o=await lireTexteGroupe(t);if(o.partiel)return o.partiel;const r=importerObjet(o,'QR');rendre();return r},{continu:true,titre:'Fiches des groupes',aide:'Scannez les QR des tablettes les uns après les autres.',reste:resteHTML});break;
     case 'qrclasse':qrDemarrage(v||DB.classe);break;
     case 'codecours':{const c=v||DB.classe,L=DB.classes[c]=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};if(!L.cc){L.cc=EPSCode.nouvelleCle();sauver()}EPSCode.prof({app:'gyp',classe:c,cle:L.cc,seances:[{v:'G',n:'Gym'}]});break}
     case 'csv':exportCSV();break;
