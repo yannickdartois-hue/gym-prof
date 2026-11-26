@@ -235,9 +235,15 @@ document.addEventListener('change',e=>{if(e.target&&e.target.id==='ap-date'&&e.t
    - la date est fixée au 1er appel de la séance ; les corrections modifient ce même appel ;
    - « Séance refaite aujourd'hui » ajoute un nouvel appel daté : les précédents sont gardés ;
    - toucher le statut actif le retire (retour au statut automatique ou « non renseigné »).
-   L'adaptateur APA (défini juste avant ce bloc) relie le module à l'outil. */
+   L'adaptateur APA (défini juste avant ce bloc) relie le module à l'outil.
+   Chantier 13 : « Bilan » de fin de cours = appréciation générale facultative (☹ 🙁 🙂 😃), champ « ap » (1 à 4)
+   de la même entrée (élève × séance × date) : une seule par élève et par séance, modifiable, historique gardé.
+   Ce n'est ni une note ni une évaluation de compétence : rien n'est calculé à partir d'elle. */
 const AP4=[['p','Présent','P'],['a','Absent','A'],['i','Inapte','I'],['ip','Inapte partiel','IP']];
 const AP4N={p:'Présent',a:'Absent',i:'Inapte',ip:'Inapte partiel'};
+const APP=[[1,'☹','Pas bon','#dc2626','#fee2e2'],[2,'🙁','Moyen','#ea580c','#ffedd5'],[3,'🙂','Bien','#65a30d','#ecfccb'],[4,'😃','Très bien','#15803d','#dcfce7']];
+const APPN={1:'Pas bon',2:'Moyen',3:'Bien',4:'Très bien'},APPE={1:'☹',2:'🙁',3:'🙂',4:'😃'};
+let AP_MODE=(()=>{try{return localStorage.getItem('eps-ap-mode:'+location.pathname)||'appel'}catch(e){return 'appel'}})();
 const APM={retard:'En retard',tenue:'Oubli de tenue',just:'Absence justifiée',oubli:'Oubli d’envoi'};
 const apJour=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const apDateFr=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}catch(e){return d}};
@@ -256,8 +262,9 @@ function apStatut(c,s,k,auto){
 function apModifier(c,s,k,f){
   const B=apBase(),id=c+'|'+s,L=B[id]=B[id]||[];let r=L[L.length-1];
   if(!r){r={d:APA.dateDe?APA.dateDe(s):apJour(),t:Date.now(),el:{}};L.push(r)}
-  const e=f(r.el[k]?{s:r.el[k].s||'',m:(r.el[k].m||[]).slice()}:{s:'',m:[]});
-  if(e&&(e.s||e.m.length)){e.t=Date.now();r.el[k]=e}else delete r.el[k];
+  const e=f(r.el[k]?{s:r.el[k].s||'',m:(r.el[k].m||[]).slice(),ap:r.el[k].ap||0}:{s:'',m:[],ap:0});
+  if(e&&!e.ap)delete e.ap;
+  if(e&&(e.s||e.m.length||e.ap)){e.t=Date.now();r.el[k]=e}else delete r.el[k];
   r.maj=Date.now();
 }
 function apRefaite(c,s){const B=apBase(),id=c+'|'+s,L=B[id]=B[id]||[];const r=L[L.length-1];if(r&&r.d===apJour())return false;L.push({d:apJour(),t:Date.now(),el:{},refaite:true});return true}
@@ -287,13 +294,22 @@ function apStyle(){if(document.getElementById('ap-style'))return;const st=docume
 .ap-act button.sec{background:#fff;color:#1c2128;border-color:#cbd5e1}
 .ap-date{font-size:14px;color:#475569;margin:4px 0}
 .ap-hist{width:100%;border-collapse:collapse;font-size:14px}.ap-hist th,.ap-hist td{padding:5px 6px;border-top:1px solid #e2e8f0;text-align:center}.ap-hist th:first-child,.ap-hist td:first-child{text-align:left}
-.ap-hw{overflow-x:auto}`;document.head.appendChild(st)}
+.ap-hw{overflow-x:auto}
+.ap-mode{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0;max-width:560px}
+.ap-mode button{min-height:48px;border-radius:12px;border:2px solid #cbd5e1;background:#fff;color:#1c2128;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer}
+.ap-mode button[aria-pressed=true]{background:#1c2128;border-color:#1c2128;color:#fff}
+.ap-s{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ap-s button{min-height:58px;border-radius:12px;border:2px solid #e2e8f0;background:#fff;color:#334155;font-family:inherit;cursor:pointer;padding:2px}
+.ap-s button span{display:block;font-size:26px;line-height:1.1}.ap-s button small{display:block;font-size:12px;font-weight:700;margin-top:2px}
+.ap-s button[aria-pressed=true]{color:#fff}
+.ap-st{display:inline-block;font-size:12px;font-weight:800;border-radius:999px;padding:2px 8px;background:#eef2f6;color:#475569}
+.ap-l.b-1{border-color:#fca5a5}.ap-l.b-2{border-color:#fdba74}.ap-l.b-3{border-color:#bef264}.ap-l.b-4{border-color:#86efac}`;document.head.appendChild(st)}
 /* écran d'appel : c classe, s séance, sNom libellé, K [{k,nom,auto:{s,info,nonRecu}}], choix html du sélecteur de séance */
 function apVue(c,s,sNom,K,choix){
   apStyle();AP_CTX={c,s,K};
   const r=apRec(c,s),L=K.map(x=>Object.assign({},x,{st:apStatut(c,s,x.k,x.auto)}));
   const n={p:0,a:0,i:0,ip:0,'':0};L.forEach(x=>n[x.st.s||'']++);
-  const auj=apJour(),dateTxt=r?`Appel du <b>${esc(apDateFr(r.d))}</b>${r.d!==auj?' · <span class="ap-info al">ce n’est pas aujourd’hui</span>':''}${apRecs(c,s).length>1?` · ${apRecs(c,s).length} appels pour cette séance`:''}`:`Pas encore d’appel pour cette séance : il sera daté d’aujourd’hui (${esc(apDateFr(auj))}).`;
+  const auj=apJour(),dateTxt=r?`Appel du <b>${esc(apDateFr(r.d))}</b>${r.d!==auj?' · <span class="ap-info al">ce n’est pas aujourd’hui</span>':''}${apRecs(c,s).length>1?` · ${apRecs(c,s).length} appels pour cette séance`:''}`:`Rien d’enregistré pour cette séance : ce sera daté d’aujourd’hui (${esc(apDateFr(auj))}).`;
   const ligne=x=>{const st=x.st,sel=st.s,auto=st.src==='auto'||st.src==='ancien';
     const info=[st.src==='auto'&&x.auto&&x.auto.info?x.auto.info:'',st.src==='ancien'?'appel d’avant la mise à jour':''].filter(Boolean).join(' · ');
     const al=x.auto&&x.auto.nonRecu?'⚠ carnet non reçu':'';
@@ -302,7 +318,9 @@ function apVue(c,s,sNom,K,choix){
     return `<li class="ap-l s-${sel||'n'}"><div class="ap-n">${APA.lien(x.k,x.nom)}${info?`<span class="ap-info">${esc(info)}</span>`:''}${al?`<span class="ap-info al">${al}</span>`:''}</div>
       <div class="ap-b" role="group" aria-label="Statut de ${esc(x.nom)}">${AP4.map(([v,l,ab])=>`<button type="button" class="${v}${sel===v&&auto?' auto':''}" data-ap="${esc(x.k)}|${v}" aria-pressed="${sel===v}" title="${l}">${ab}<small>${l}</small></button>`).join('')}</div>
       ${pm.length?`<div class="ap-m">${pm.map(m=>`<button type="button" data-apm="${esc(x.k)}|${m}" aria-pressed="${(st.m||[]).includes(m)}">${APM[m]}</button>`).join('')}</div>`:''}</li>`};
-  return `<h2>Appel · ${esc(sNom)}</h2>${choix||''}
+  const modeHtml=`<div class="ap-mode" role="group" aria-label="Écran"><button type="button" data-apmode="appel" aria-pressed="${AP_MODE!=='bilan'}">📋 Appel</button><button type="button" data-apmode="bilan" aria-pressed="${AP_MODE==='bilan'}">🙂 Bilan de fin de cours</button></div>`;
+  if(AP_MODE==='bilan')return apBilan(c,s,sNom,L,choix,dateTxt,modeHtml,K);
+  return `<h2>Appel · ${esc(sNom)}</h2>${modeHtml}${choix||''}
    <p class="ap-date">${dateTxt}</p>
    <div class="ap-tete"><span class="ap-cpt p">Présents ${n.p}</span><span class="ap-cpt a">Absents ${n.a}</span><span class="ap-cpt i">Inaptes ${n.i}</span><span class="ap-cpt ip">Inaptes partiels ${n.ip}</span>${n['']?`<span class="ap-cpt n">Non renseignés ${n['']}</span>`:''}</div>
    <div class="ap-act">${n['']?`<button type="button" data-apx="tous">✓ Les ${n['']} non renseigné${n['']>1?'s':''} : présents</button>`:''}${r&&r.d!==auj&&!APA.sansRefaite?'<button type="button" class="sec" data-apx="refaite">📅 Séance refaite aujourd’hui (nouvel appel)</button>':''}<button type="button" class="sec" data-apx="csv">⬇ Exporter l’appel (CSV)</button></div>
@@ -310,25 +328,45 @@ function apVue(c,s,sNom,K,choix){
    <p class="small muted">Touchez le statut ; touchez-le à nouveau pour l’enlever. Pointillés = statut proposé automatiquement${APA.autoTxt?' ('+APA.autoTxt+')':''} : le toucher le confirme. Absent et inapte sont toujours distincts. Tout est gardé sur l’appareil (hors connexion) et dans la sauvegarde.</p>
    ${apRecap(c,K)}`;
 }
+/* Bilan de fin de cours : une appréciation facultative par élève (un toucher ; re-toucher l'enlève) */
+function apBilan(c,s,sNom,L,choix,dateTxt,modeHtml,K){
+  const r=apRec(c,s),apDe=k=>(r&&r.el[k]&&r.el[k].ap)||0;const n={0:0,1:0,2:0,3:0,4:0};
+  L.forEach(x=>{if(x.st.s!=='a')n[apDe(x.k)]++});
+  const ligne=x=>{const v=apDe(x.k),abs=x.st.s==='a';
+    return `<li class="ap-l${v?' b-'+v:''}"><div class="ap-n">${APA.lien(x.k,x.nom)}${x.st.s?`<span class="ap-st">${AP4N[x.st.s]}</span>`:''}</div>
+      ${abs?'<p class="ap-info">Absent : pas d’appréciation.</p>':`<div class="ap-s" role="group" aria-label="Appréciation de ${esc(x.nom)}">${APP.map(([q,e,l,col,bg])=>`<button type="button" data-apa="${esc(x.k)}|${q}" aria-pressed="${v===q}" title="${l}" style="${v===q?`background:${col};border-color:${col}`:`background:${bg}`}"><span aria-hidden="true">${e}</span><small>${l}</small></button>`).join('')}</div>`}</li>`};
+  return `<h2>Bilan · ${esc(sNom)}</h2>${modeHtml}${choix||''}
+   <p class="ap-date">${dateTxt}</p>
+   <p class="small">Appréciation générale de la séance, <b>facultative</b> : un toucher par élève, re-toucher pour l’enlever. Ce n’est ni une note ni une évaluation de compétence.</p>
+   <div class="ap-tete">${APP.map(([q,e,l,col,bg])=>`<span class="ap-cpt" style="background:${bg};color:${col}">${e} ${l} ${n[q]}</span>`).join('')}${n[0]?`<span class="ap-cpt n">Sans appréciation ${n[0]}</span>`:''}</div>
+   <ul class="ap-liste">${L.map(ligne).join('')}</ul>
+   <p class="small muted">Gardé avec l’appel de la séance (même date) : changer de séance ou corriger plus tard n’efface rien. Hors connexion, sur l’appareil et dans la sauvegarde.</p>
+   ${apRecap(c,K)}`;
+}
 /* récapitulatif du cycle pour la classe : par élève, nombre de séances par statut et précisions */
 function apRecap(c,K){
   const B=apBase(),ids=Object.keys(B).filter(id=>id.slice(0,id.lastIndexOf('|'))===c);if(!ids.length)return '';
-  const rows=K.map(x=>{const t={a:0,i:0,ip:0,just:0,retard:0,tenue:0};ids.forEach(id=>{const s=id.slice(id.lastIndexOf('|')+1);const st=apStatut(c,s,x.k,(APA.autoDe&&APA.autoDe(x.k,s))||null);if(t[st.s]!=null&&st.s!=='p')t[st.s]++;(st.m||[]).forEach(m=>{if(t[m]!=null)t[m]++})});return [x,t]}).filter(([,t])=>Object.values(t).some(Boolean));
-  return `<details><summary><b>Récapitulatif de la classe</b> (${ids.length} séance${ids.length>1?'s':''} avec appel)</summary>${rows.length?`<div class="ap-hw"><table class="ap-hist"><tr><th>Élève</th><th>Abs.</th><th>dont just.</th><th>Inapte</th><th>Inapte part.</th><th>Retards</th><th>Tenue</th></tr>${rows.map(([x,t])=>`<tr><td>${esc(x.nom)}</td><td>${t.a||''}</td><td>${t.just||''}</td><td>${t.i||''}</td><td>${t.ip||''}</td><td>${t.retard||''}</td><td>${t.tenue||''}</td></tr>`).join('')}</table></div>`:'<p class="small">Rien à signaler : tous présents.</p>'}</details>`;
+  const ordre=ids.map(id=>{const L=B[id];return [id,L.length?L[0].d:'']}).sort((a,b)=>a[1]<b[1]?-1:a[1]>b[1]?1:0).map(x=>x[0]);
+  const apSuite=k=>ordre.map(id=>apRecs(id.slice(0,id.lastIndexOf('|')),id.slice(id.lastIndexOf('|')+1)).map(r=>r.el[k]&&r.el[k].ap).filter(Boolean)).flat();
+  const rows=K.map(x=>{const t={a:0,i:0,ip:0,just:0,retard:0,tenue:0,ap:apSuite(x.k)};ids.forEach(id=>{const s=id.slice(id.lastIndexOf('|')+1);const st=apStatut(c,s,x.k,(APA.autoDe&&APA.autoDe(x.k,s))||null);if(t[st.s]!=null&&st.s!=='p')t[st.s]++;(st.m||[]).forEach(m=>{if(t[m]!=null)t[m]++})});return [x,t]}).filter(([,t])=>Object.entries(t).some(([q,v])=>q==='ap'?v.length:v));
+  return `<details><summary><b>Récapitulatif de la classe</b> (${ids.length} séance${ids.length>1?'s':''} avec appel)</summary>${rows.length?`<div class="ap-hw"><table class="ap-hist"><tr><th>Élève</th><th>Abs.</th><th>dont just.</th><th>Inapte</th><th>Inapte part.</th><th>Retards</th><th>Tenue</th><th>Bilans (séance par séance)</th></tr>${rows.map(([x,t])=>`<tr><td>${esc(x.nom)}</td><td>${t.a||''}</td><td>${t.just||''}</td><td>${t.i||''}</td><td>${t.ip||''}</td><td>${t.retard||''}</td><td>${t.tenue||''}</td><td style="white-space:nowrap" title="${t.ap.map(q=>APPN[q]).join(', ')}">${t.ap.map(q=>APPE[q]).join(' ')}</td></tr>`).join('')}</table></div>`:'<p class="small">Rien à signaler : tous présents, aucun bilan.</p>'}</details>`;
 }
 function apCSV(c){
-  const B=apBase(),L=[['Classe','Séance','Date','Élève','Statut','Précisions','Modifié le']];
-  Object.keys(B).filter(id=>id.slice(0,id.lastIndexOf('|'))===c).forEach(id=>{const s=id.slice(id.lastIndexOf('|')+1);B[id].forEach(r=>Object.entries(r.el).forEach(([k,e])=>L.push([c,APA.nomSeance?APA.nomSeance(s):s,r.d,APA.nom(k),AP4N[e.s]||'',(e.m||[]).map(m=>APM[m]).join(' + '),e.t?new Date(e.t).toLocaleString('fr-FR'):''])))});
+  const B=apBase(),L=[['Classe','Séance','Date','Élève','Statut','Précisions','Appréciation (bilan)','Modifié le']];
+  Object.keys(B).filter(id=>id.slice(0,id.lastIndexOf('|'))===c).forEach(id=>{const s=id.slice(id.lastIndexOf('|')+1);B[id].forEach(r=>Object.entries(r.el).forEach(([k,e])=>L.push([c,APA.nomSeance?APA.nomSeance(s):s,r.d,APA.nom(k),AP4N[e.s]||'',(e.m||[]).map(m=>APM[m]).join(' + '),e.ap?APPN[e.ap]:'',e.t?new Date(e.t).toLocaleString('fr-FR'):''])))});
   const txt='﻿'+L.map(r=>r.map(v=>{v=String(v==null?'':v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(';')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));a.download='appel_'+String(c).replace(/[^\w-]+/g,'_')+'_'+apJour()+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 }
 document.addEventListener('click',e=>{
-  const b=e.target.closest&&e.target.closest('[data-ap],[data-apm],[data-apx]');if(!b||!AP_CTX)return;
+  const b=e.target.closest&&e.target.closest('[data-ap],[data-apm],[data-apx],[data-apa],[data-apmode]');if(!b||!AP_CTX)return;
   e.preventDefault();e.stopPropagation();const {c,s,K}=AP_CTX;
   if(b.dataset.ap!=null){const v=b.dataset.ap,i=v.lastIndexOf('|'),k=v.slice(0,i),val=v.slice(i+1),x=K.find(y=>y.k===k)||{},st=apStatut(c,s,k,x.auto);
     apModifier(c,s,k,en=>{en.s=st.src==='appel'&&st.s===val?'':val;if(en.s!=='a')en.m=en.m.filter(m=>m!=='just');if(en.s==='a')en.m=en.m.filter(m=>m==='just');return en})}
   else if(b.dataset.apm!=null){const v=b.dataset.apm,i=v.lastIndexOf('|'),k=v.slice(0,i),m=v.slice(i+1),x=K.find(y=>y.k===k)||{},st=apStatut(c,s,k,x.auto);
     apModifier(c,s,k,en=>{if(!en.s&&st.s)en.s=st.s;const j=en.m.indexOf(m);if(j>=0)en.m.splice(j,1);else en.m.push(m);return en})}
+  else if(b.dataset.apmode!=null){AP_MODE=b.dataset.apmode==='bilan'?'bilan':'appel';try{localStorage.setItem('eps-ap-mode:'+location.pathname,AP_MODE)}catch(x){}}
+  else if(b.dataset.apa!=null){const v=b.dataset.apa,i=v.lastIndexOf('|'),k=v.slice(0,i),q=+v.slice(i+1);
+    if(apStatut(c,s,k,(K.find(y=>y.k===k)||{}).auto).s==='a')return;apModifier(c,s,k,en=>{en.ap=en.ap===q?0:q;return en})}
   else if(b.dataset.apx==='tous'){K.forEach(x=>{if(!apStatut(c,s,x.k,x.auto).s)apModifier(c,s,x.k,en=>{en.s='p';return en})})}
   else if(b.dataset.apx==='refaite'){if(!confirm('Nouvel appel daté d’aujourd’hui pour cette séance ? L’appel précédent est gardé dans l’historique.'))return;apRefaite(c,s)}
   else if(b.dataset.apx==='csv'){apCSV(c);return}

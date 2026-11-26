@@ -7,6 +7,7 @@ window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 <li>Précisions cumulables : en retard, oubli de tenue, absence justifiée.</li>
 <li>En gym, la séance est la <b>date du cours</b> (aujourd’hui par défaut, ou une date passée à compléter). Un élève « Inapte partiel » ou « Dispensé du cycle » dans sa fiche est proposé inapte partiel ou inapte. L’appel ne change pas la note.</li>
 <li>Chaque appel est daté (le jour du premier appel de la séance) et gardé : changer de séance ou corriger plus tard n’efface rien. Tout reste sur l’appareil, hors connexion, et part dans la sauvegarde. « Exporter l’appel » : CSV de tout l’historique de la classe.</li>
+<li><b>🙂 Bilan de fin de cours</b> (bouton en haut de l’écran Appel) : appréciation générale facultative de chaque élève — ☹ Pas bon, 🙁 Moyen, 🙂 Bien, 😃 Très bien. Un toucher, re-toucher pour l’enlever ou en choisir une autre. Gardée avec l’appel de la séance et dans le récapitulatif ; ce n’est ni une note ni une évaluation de compétence.</li>
 </ol>`},
 {t:'📷 QR du jour (niveaux ⚠️)',html:`<ol>
 <li>En gym, le QR du jour ne sert qu’aux niveaux ⚠️ : sans lui, un élève ne peut pas valider E un salto ou un niveau E/F de trampoline hors du cours. Aucun code à taper.</li>
