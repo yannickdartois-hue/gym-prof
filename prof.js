@@ -164,16 +164,18 @@ async function importerListe(files,texte,classeDefaut){
 }
 function chaineEleve(E){return GYM.ateliers.map(a=>NIVS.map(n=>{const v=E.v[a.n+n]||{};return v.p?'p':v.e?'e':v.deb?'d':'0'}).join('')).join('')}
 async function empreinte(code){const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('gym-prof|'+code));return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,24)}
-async function qrDemarrage(c){
+async function qrDemarrage(c,cjForce,svgSeul){
   const L=DB.classes[c]=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};if(!L.cc){L.cc=EPSCode.nouvelleCle();sauver()}
   // validations connues par élève (6 ateliers × 6 niveaux : 0, e, p, d) — seules les lignes non vides
   const pv={};elevesClasse(c).forEach(x=>{const ch=chaineEleve(x.E);if(/[epd]/.test(ch))pv[x.nom]=ch});
-  const txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',pk:(await SIGNE.cles()).pub,b:L.barres?1:0,li:L.liaisons?1:0,tc:L.tc?1:0,cc:L.cc,cj:await EPSCode.cjDuJour('gyp',c,L.cc,'G'),pv,ts:Math.round(Date.now()/1000)});
+  const txt=await GQR.encoder({a:'GYM',v:1,t:'C',c,l:L.eleves,u:L.lien||'',pk:(await SIGNE.cles()).pub,b:L.barres?1:0,li:L.liaisons?1:0,tc:L.tc?1:0,cc:L.cc,cj:cjForce||await EPSCode.cjDuJour('gyp',c,L.cc,'G'),pv,ts:Math.round(Date.now()/1000)});
   let svg;try{svg=GQR.svgQR(txt)}catch(e){svg='<p class="alerte">Liste trop longue pour un seul QR.</p>'}
+  if(svgSeul)return svg;
   const d=document.createElement('div');d.className='voile';
   d.innerHTML=`<div class="fen" style="max-width:640px"><h2>Classe ${esc(c)} · gymnastique</h2><p>Appli élève : « QR de la classe (prof) », ou Groupe → « Scanner le QR de la classe ».</p><p class="small" style="background:#fff7ed;border-left:6px solid #ea580c;padding:6px 10px;border-radius:8px">🎬 <b>Au premier cours</b> : faites télécharger les vidéos avec le Wi-Fi du lycée (Accueil de l’appli élève → « Télécharger les vidéos », environ 90 Mo). Sinon certaines ne se chargeront pas au gymnase.</p><p class="small muted">Le QR contient aussi vos validations P : elles s’ajoutent sur les tablettes, et un groupe qui a oublié son code retrouve ses niveaux en recréant son carnet avec la liste de la classe.</p><div class="qrbox">${svg}</div><button class="bt noir" type="button" style="margin-top:12px">Fermer</button></div>`;
   d.querySelector('button').onclick=()=>d.remove();document.body.appendChild(d);
   const bA=document.createElement('button');bA.className='bt act';bA.type='button';bA.textContent='🖨 Affiche du premier cours (A4)';bA.style.marginTop='10px';bA.onclick=()=>afficheCours(c,svg);d.querySelector('.fen').appendChild(bA);
+  const bP=document.createElement('button');bP.className='bt';bP.type='button';bP.textContent='🗓 QR pour un autre jour · imprimer';bP.style.margin='10px 0 0 8px';bP.onclick=()=>EPSCode.preparer({app:'gyp',classe:c,cle:L.cc,titre:'Gymnastique',seances:[{v:'G',n:'Gym'}],qr:cj=>qrDemarrage(c,cj,true)});d.querySelector('.fen').appendChild(bP);
 }
 /* Affiche A4 : QR de l'appli (appareil photo) + QR de la classe (dans l'appli), avec les étapes */
 function afficheCours(c,svgClasse){const URL_APP='https://yannickdartois-hue.github.io/gym-eleves/';
@@ -181,7 +183,7 @@ function afficheCours(c,svgClasse){const URL_APP='https://yannickdartois-hue.git
   a.innerHTML=`<h1>Gymnastique · premier cours · ${esc(c)}</h1><div class="aff2">
    <div><h2>① Installer l’appli</h2>${GQR.svgQR(URL_APP)}<ol><li>Scannez ce QR avec <b>l’appareil photo</b>.</li><li>Ajoutez l’appli à l’<b>écran d’accueil</b> (iPhone : Partager → « Sur l’écran d’accueil » ; Android : ⋮ → « Installer »).</li><li><b>Ouvrez l’appli avec son icône</b> et touchez « Télécharger les vidéos » (Wi-Fi).</li></ol></div>
    <div><h2>② Entrer dans la classe</h2>${svgClasse}<ol><li>Dans l’appli : « 📷 Scanner le QR de la classe ».</li><li>« Créer notre groupe » : lettre du groupe, code à 4 chiffres (notez-le !).</li><li>Cochez vos noms dans la liste.</li></ol></div></div>
-   <p class="pied">Le QR ② donne la liste de la classe ; le code du cours qu’il contient n’est valable qu’aujourd’hui (${new Date().toLocaleDateString('fr-FR')}).</p>`;
+   <p class="pied">Le QR ② donne la liste de la classe ; la séance qu’il ouvre n’est valable qu’aujourd’hui (${new Date().toLocaleDateString('fr-FR')}).</p>`;
   document.body.appendChild(a);document.body.classList.add('impr-affiche');
   const fin=()=>{document.body.classList.remove('impr-affiche');a.remove();window.removeEventListener('afterprint',fin)};window.addEventListener('afterprint',fin);setTimeout(()=>window.print(),200)}
 
@@ -273,8 +275,8 @@ function vClasses(){
    <label class="small"><b>Lien de dépôt Nuage</b> (facultatif, « Demande de fichier »)</label><input type="text" data-lien="${esc(c)}" value="${esc(L.lien||'')}" placeholder="https://nuage…">
    <label class="coche"><input type="checkbox" data-barres="${esc(c)}" ${L.barres?'checked':''}> Afficher les barres asymétriques aux élèves</label>
    <label class="coche"><input type="checkbox" data-liaisons="${esc(c)}" ${L.liaisons?'checked':''}> Afficher les éléments de liaison aux élèves <span class="small muted">(cachés en début de cycle)</span></label>
-   <label class="coche"><input type="checkbox" data-tc="${esc(c)}" ${L.tc?'checked':''}> 🔑 Code du cours pour valider E à <b>tous</b> les niveaux (sinon : seulement les niveaux ⚠️)</label>
-   <div class="rangee" style="margin-top:10px"><button class="bt act" type="button" data-act="qrclasse" data-v="${esc(c)}">▦ QR de démarrage</button><button class="bt" type="button" data-act="codecours" data-v="${esc(c)}">🔑 Code du cours</button><button class="bt mini danger" type="button" data-act="suppclasse" data-v="${esc(c)}">Supprimer la classe</button></div></section>`}).join('')}
+   <label class="coche"><input type="checkbox" data-tc="${esc(c)}" ${L.tc?'checked':''}> 📷 QR du jour obligatoire pour valider E à <b>tous</b> les niveaux (sinon : seulement les niveaux ⚠️)</label>
+   <div class="rangee" style="margin-top:10px"><button class="bt act" type="button" data-act="qrclasse" data-v="${esc(c)}">▦ QR de démarrage</button><button class="bt mini danger" type="button" data-act="suppclasse" data-v="${esc(c)}">Supprimer la classe</button></div></section>`}).join('')}
 <section class="carte"><h3>🔑 Un groupe a oublié son code</h3><ol class="small"><li>Le groupe touche son carnet, puis « Code oublié ? » : un QR s’affiche.</li><li>Scanne-le avec <b>📷 Valider un élève</b> ou <b>Recevoir → Scanner</b> : le code à 4 chiffres s’affiche en grand.</li><li>Dis-le au groupe. Rien n’est perdu.</li></ol><p class="small muted">Carnet trop ancien (pas de QR s’affiche) : le groupe en crée un nouveau, scanne le QR de la classe ; ses validations envoyées sont chez toi.</p></section>
   ${vBareme()}
   ${carteDemo()}
@@ -304,7 +306,6 @@ document.addEventListener('click',async ev=>{
     case 'scanvalid':scanValidation();break;
     case 'scan':GQR.scanner(async t=>{const o=await lireTexteGroupe(t);if(o.partiel)return o.partiel;const r=importerObjet(o,'QR');rendre();return r},{continu:true,titre:'Fiches des groupes',aide:'Scannez les QR des tablettes les uns après les autres.',reste:resteHTML});break;
     case 'qrclasse':qrDemarrage(v||DB.classe);break;
-    case 'codecours':{const c=v||DB.classe,L=DB.classes[c]=DB.classes[c]||{eleves:elevesClasse(c).map(x=>x.nom),lien:'',barres:false};if(!L.cc){L.cc=EPSCode.nouvelleCle();sauver()}EPSCode.prof({app:'gyp',classe:c,cle:L.cc,seances:[{v:'G',n:'Gym'}]});break}
     case 'csv':exportCSV();break;
     case 'rotation':ouvrirRotation();break;
     case 'rot-go':lancerRotation(+v);break;

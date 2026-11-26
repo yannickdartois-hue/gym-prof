@@ -1,16 +1,15 @@
 /* aide.js — mode d'emploi de l'outil prof de gymnastique (lu par eps-aide.js) */
 window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 {id:'prof',titre:'Professeur',chapitres:[
-{t:'🔑 Code du cours (niveaux ⚠️)',html:`<ol>
-<li>En gym, le code ne sert qu’aux niveaux ⚠️ : sans lui, un élève ne peut pas valider E un salto ou un niveau E/F de trampoline hors du cours.</li>
-<li>Début de cours : <span class="bouton">🔑 Code du cours</span>, écrivez les 4 chiffres au tableau.</li>
-<li>Chaque groupe tape le code : la séance du jour s’ouvre sur son téléphone pour toute la journée. Les autres niveaux ne demandent rien.</li>
-<li><b>Plus rapide : le QR du jour.</b> Le QR de la classe affiché un jour de cours ouvre aussi la séance : chaque groupe le scanne (« QR de la classe »), rien à taper. Il apporte en même temps vos P et la liste à jour. Le code au tableau reste valable.</li>
-<li>Le code ne vaut que ce jour-là. Pour préparer un cours, changez la date : le code s’affiche à l’avance. Aucune connexion nécessaire.</li>
-</ol><p class="astuce">Une seule fois après cette mise à jour : refaites scanner le <b>QR de démarrage</b> (il apporte la clé de la classe). Tant qu’un téléphone ne l’a pas rescanné, il n’est pas verrouillé.</p>`},
+{t:'📷 QR du jour (niveaux ⚠️)',html:`<ol>
+<li>En gym, le QR du jour ne sert qu’aux niveaux ⚠️ : sans lui, un élève ne peut pas valider E un salto ou un niveau E/F de trampoline hors du cours. Aucun code à taper.</li>
+<li>Début de cours : <span class="bouton">▦ QR de démarrage</span>. Chaque groupe le scanne (« QR de la classe ») : la séance s’ouvre pendant 2 heures. Il apporte en même temps vos P et la liste à jour.</li>
+<li>Option de la classe : « QR du jour obligatoire pour valider E à tous les niveaux ».</li>
+<li>Le QR ne vaut que ce jour-là. Pas d’écran en cours ? <b>🗓 QR pour un autre jour · imprimer</b>, d’avance. Aucune connexion nécessaire.</li>
+</ol>`},
 
 {t:'Mise en place (une fois par classe)',html:`<ol>
-<li><b>Premier cours</b> : Classe → « QR de la classe » → <b>🖨 Affiche du premier cours</b>. Une page A4 avec les deux QR (installer l’appli, entrer dans la classe) et les étapes : affichez-la, les groupes s’installent seuls. Le code du cours contenu dans ce QR n’est valable que le jour même : il ouvre la séance sans code à taper.</li>
+<li><b>Premier cours</b> : Classe → « QR de la classe » → <b>🖨 Affiche du premier cours</b>. Une page A4 avec les deux QR (installer l’appli, entrer dans la classe) et les étapes : affichez-la, les groupes s’installent seuls. Ce QR ouvre aussi la séance, le jour même seulement.</li>
 <li><b>Réglages → Importer une liste Pronote</b> (xlsx, xls ou csv). Avec une colonne « Classe », plusieurs classes d’un coup.</li><li><b>Toutes les classes d’un coup</b> : le fichier fait par la page « Mes classes » du portail mon-EPS. <b>Élève arrivé en cours d’année</b> : collez « NOM Prénom » avec le nom de la classe → « Ajouter ces élèves ». Classe déjà présente : l’appli demande toujours « Ajouter » ou « Remplacer la liste ». Ensuite, faites rescanner le QR de démarrage.</li>
 <li>Facultatif : <b>lien de dépôt Nuage</b> de la classe, et la case <b>barres asymétriques</b> (cachées par défaut).</li>
 <li><span class="bouton">▦ QR de démarrage</span> : chaque tablette le scanne (appli élève → « QR de la classe »).</li>
