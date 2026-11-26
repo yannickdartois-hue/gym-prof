@@ -198,11 +198,11 @@ function classesConnues(){return [...new Set([...Object.keys(DB.classes),...Obje
 function rendre(){
   try{rangerIsoles()}catch(e){}
   const C=classesConnues();if(!DB.classe&&C.length)DB.classe=C[0];
-  const T=[['tableau','📊','Classe'],['valider','✅','À valider'],['recevoir','📥','Recevoir'],['classes','⚙️','Réglages']];
+  const T=[['tableau','📊','Classe'],['appel','📋','Appel'],['valider','✅','À valider'],['recevoir','📥','Recevoir'],['classes','⚙️','Réglages']];
   $('#onglets').innerHTML=T.map(([k,i,l])=>`<button type="button" class="${DB.vue===k?'ici':''}" data-act="vue" data-v="${k}"><i>${i}</i>${l}${k==='valider'&&nbAValider()?' ('+nbAValider()+')':''}</button>`).join('');
   $('#sous').textContent=DB.classe?'Classe '+DB.classe:'Lycée Georges Pompidou';
   const sel=C.length?`<div class="qui">${C.map(c=>`<button type="button" class="${c===DB.classe?'ici':''}" data-act="classe" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>`:'';
-  $('#app').innerHTML=bandeauDemo()+(DB.eleve&&DB.vue==='tableau'?vEleve(DB.eleve):{tableau:()=>sel+(DB.vueGr?vParGroupe():DB.vueAt?vParAtelier():vTableau()),valider:()=>sel+vValider(),recevoir:()=>sel+vRecevoir(),classes:vClasses}[DB.vue]());
+  $('#app').innerHTML=bandeauDemo()+(DB.eleve&&DB.vue==='tableau'?vEleve(DB.eleve):{tableau:()=>sel+(DB.vueGr?vParGroupe():DB.vueAt?vParAtelier():vTableau()),appel:()=>sel+vAppelGym(),valider:()=>sel+vValider(),recevoir:()=>sel+vRecevoir(),classes:vClasses}[DB.vue]());
 }
 function cellule(E,a){const p=meilleur(E,a,'p'),e=meilleur(E,a,'e');
   return `<td>${p?`<span class="L L${p}" style="width:36px;height:36px;font-size:20px">${p}</span>`:'<span class="muted">–</span>'}${e&&e!==p?`<span class="eseul" title="validé E par un camarade, à confirmer"><span class="L L${e}">${e}</span><small>E</small></span>`:''}</td>`}
@@ -212,6 +212,130 @@ function recuEtat(E){const t=E&&(E.recu||E.maj);if(!t)return 'non';return jourDe
 function pastille(E){const s=recuEtat(E);return `<span class="pst ${s}" title="${s==='auj'?'reçu aujourd’hui':s==='avant'?'reçu un autre jour':'pas encore reçu'}"></span>`}
 function resteHTML(){if(!DB.classe)return '';const L=elevesClasse(DB.classe).filter(x=>!x.horsListe&&x.E.st!=='disp'),m=L.filter(x=>recuEtat(x.E)!=='auj');
   return m.length?`<b>${L.length-m.length} / ${L.length} reçus aujourd’hui.</b> Il manque : ${m.map(x=>esc(x.nom)).join(', ')}`:`<b>✓ Toute la classe ${esc(DB.classe)} est reçue aujourd’hui.</b>`}
+/* ---------- Appel (chantier 10) : en gym, la séance est la date du cours ---------- */
+function vAppelGym(){const c=DB.classe;if(!c)return '<p class="muted">Choisissez d’abord une classe (onglet Réglages).</p>';
+  const auj=apJour();let d=DB.apD&&DB.apD.c===c&&DB.apD.j===auj?DB.apD.d:auj;
+  const dates=[...new Set(Object.keys(apBase()).filter(id=>id.slice(0,id.lastIndexOf('|'))===c).map(id=>id.slice(id.lastIndexOf('|')+1)).concat([auj]))].sort().reverse().slice(0,12);
+  const choix=`<div class="ap-act" style="align-items:center"><label class="small" for="ap-date"><b>Date du cours</b></label><input type="date" id="ap-date" value="${esc(d)}" max="${auj}" style="min-height:46px;font-size:16px;border-radius:12px;border:2px solid #cbd5e1;padding:0 10px"></div>${dates.length>1?`<div class="qui">${dates.map(x=>`<button type="button" class="${x===d?'ici':''}" data-apd="${esc(x)}">${esc(x===auj?'Aujourd’hui':new Date(x+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'}))}</button>`).join('')}</div>`:''}`;
+  const K=elevesClasse(c).map(x=>({k:x.k,nom:x.nom,auto:APA.autoDe(x.k,d)}));
+  return apVue(c,d,'cours du '+apDateFr(d),K,choix)}
+const APA={db:()=>DB,sauver:()=>sauver(),rendre:()=>{const y=scrollY;rendre();scrollTo(0,y)},sansRefaite:true,dateDe:s=>s,
+  lien:(k,nom)=>`<button type="button" class="ap-nom" data-apfiche="${esc(k)}">${esc(nom)}</button>`,
+  nom:k=>(DB.el[k]&&DB.el[k].nom)||k,nomSeance:s=>'cours du '+s,autoTxt:'d’après le statut du cycle dans la fiche',
+  autoDe:k=>{const E=DB.el[k];if(E&&E.st==='ip')return {s:'ip',info:'inapte partiel (cycle)'};if(E&&E.st==='disp')return {s:'i',info:'dispensé du cycle'};return null}};
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-apfiche],[data-apd]');if(!b)return;e.preventDefault();e.stopPropagation();
+  if(b.dataset.apfiche!=null){DB.vue='tableau';DB.eleve=b.dataset.apfiche;rendre();scrollTo(0,0);return}
+  DB.apD={c:DB.classe,d:b.dataset.apd,j:apJour()};sauver();rendre()},true);
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='ap-date'&&e.target.value){DB.apD={c:DB.classe,d:e.target.value,j:apJour()};sauver();rendre()}});
+/* ===================== Appel (chantier 10, 26/11/2026) =====================
+   Repris du module d'appel de Demi-fond et mis à niveau. Code propre à cet outil (copie autonome).
+   4 statuts exclusifs : Présent · Absent · Inapte · Inapte partiel (absent ≠ inapte, partout).
+   Précisions cumulables : en retard, oubli de tenue, absence justifiée, oubli d'envoi.
+   Données : <base>.appel2['classe|séance'] = [ {d:'AAAA-MM-JJ', t, el:{ clé élève:{s,m:[],t} }} , … ]
+   - la date est fixée au 1er appel de la séance ; les corrections modifient ce même appel ;
+   - « Séance refaite aujourd'hui » ajoute un nouvel appel daté : les précédents sont gardés ;
+   - toucher le statut actif le retire (retour au statut automatique ou « non renseigné »).
+   L'adaptateur APA (défini juste avant ce bloc) relie le module à l'outil. */
+const AP4=[['p','Présent','P'],['a','Absent','A'],['i','Inapte','I'],['ip','Inapte partiel','IP']];
+const AP4N={p:'Présent',a:'Absent',i:'Inapte',ip:'Inapte partiel'};
+const APM={retard:'En retard',tenue:'Oubli de tenue',just:'Absence justifiée',oubli:'Oubli d’envoi'};
+const apJour=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const apDateFr=d=>{try{return new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}catch(e){return d}};
+function apBase(){const B=APA.db();return B.appel2=B.appel2||{}}
+function apRecs(c,s){return apBase()[c+'|'+s]||[]}
+function apRec(c,s){const L=apRecs(c,s);return L.length?L[L.length-1]:null}
+/* statut final d'un élève : manuel (appel), sinon ancien appel (avant ce module), sinon automatique */
+function apStatut(c,s,k,auto){
+  const r=apRec(c,s),e=r&&r.el[k];
+  if(e&&e.s)return {s:e.s,m:e.m||[],src:'appel'};
+  const a=auto||{};
+  if(e&&!e.s&&(e.m||[]).length)return {s:a.s||'',m:e.m,src:a.s?'auto':'',info:a.info};
+  const o=APA.ancien&&APA.ancien(c,s,k);if(o&&o.s)return {s:o.s,m:o.m||[],src:'ancien'};
+  return {s:a.s||'',m:[],src:a.s?'auto':'',info:a.info};
+}
+function apModifier(c,s,k,f){
+  const B=apBase(),id=c+'|'+s,L=B[id]=B[id]||[];let r=L[L.length-1];
+  if(!r){r={d:APA.dateDe?APA.dateDe(s):apJour(),t:Date.now(),el:{}};L.push(r)}
+  const e=f(r.el[k]?{s:r.el[k].s||'',m:(r.el[k].m||[]).slice()}:{s:'',m:[]});
+  if(e&&(e.s||e.m.length)){e.t=Date.now();r.el[k]=e}else delete r.el[k];
+  r.maj=Date.now();
+}
+function apRefaite(c,s){const B=apBase(),id=c+'|'+s,L=B[id]=B[id]||[];const r=L[L.length-1];if(r&&r.d===apJour())return false;L.push({d:apJour(),t:Date.now(),el:{},refaite:true});return true}
+let AP_CTX=null;   /* contexte de l'écran d'appel affiché : {c,s,K:[{k,nom,auto}]} */
+function apStyle(){if(document.getElementById('ap-style'))return;const st=document.createElement('style');st.id='ap-style';st.textContent=`
+.ap-tete{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.ap-cpt{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:800;font-size:14px;background:#eef2f6;color:#1c2128}
+.ap-cpt.p{background:#dcfce7;color:#166534}.ap-cpt.a{background:#fee2e2;color:#991b1b}.ap-cpt.i{background:#e0e7ff;color:#3730a3}.ap-cpt.ip{background:#fef3c7;color:#92400e}.ap-cpt.n{background:#f1f5f9;color:#475569}
+.ap-liste{list-style:none;margin:8px 0;padding:0;display:grid;gap:8px}
+@media(min-width:760px){.ap-liste{grid-template-columns:1fr 1fr}}
+.ap-l{border:2px solid #e2e8f0;border-radius:14px;padding:10px;background:#fff}
+.ap-l.s-p{border-color:#86efac}.ap-l.s-a{border-color:#fca5a5}.ap-l.s-i{border-color:#a5b4fc}.ap-l.s-ip{border-color:#fcd34d}
+.ap-n{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-bottom:8px}
+.ap-nom{background:none;border:0;padding:0;font:inherit;font-weight:800;font-size:17px;color:#14181f;text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:#cbd5e1}
+.ap-info{font-size:13.5px;color:#475569}.ap-info.al{color:#b42318;font-weight:700}
+.ap-b{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ap-b button{min-height:48px;border-radius:12px;border:2px solid #cbd5e1;background:#fff;color:#14181f;font-family:inherit;font-weight:800;font-size:17px;line-height:1;cursor:pointer;padding:0 4px}
+.ap-b button small{display:block;font-weight:600;font-size:11px;margin-top:2px}
+.ap-b button[aria-pressed=true].p{background:#15803d;border-color:#15803d;color:#fff}.ap-b button[aria-pressed=true].a{background:#b91c1c;border-color:#b91c1c;color:#fff}
+.ap-b button[aria-pressed=true].i{background:#4338ca;border-color:#4338ca;color:#fff}.ap-b button[aria-pressed=true].ip{background:#b45309;border-color:#b45309;color:#fff}
+.ap-b button.auto{border-style:dashed}
+.ap-m{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ap-m button{min-height:40px;border-radius:999px;border:2px solid #cbd5e1;background:#fff;color:#334155;font-family:inherit;font-weight:700;font-size:14px;padding:0 12px;cursor:pointer}
+.ap-m button[aria-pressed=true]{background:#334155;border-color:#334155;color:#fff}
+.ap-act{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.ap-act button{min-height:46px;border-radius:12px;border:2px solid #1c2128;background:#1c2128;color:#fff;font-family:inherit;font-weight:700;font-size:15px;padding:0 14px;cursor:pointer}
+.ap-act button.sec{background:#fff;color:#1c2128;border-color:#cbd5e1}
+.ap-date{font-size:14px;color:#475569;margin:4px 0}
+.ap-hist{width:100%;border-collapse:collapse;font-size:14px}.ap-hist th,.ap-hist td{padding:5px 6px;border-top:1px solid #e2e8f0;text-align:center}.ap-hist th:first-child,.ap-hist td:first-child{text-align:left}
+.ap-hw{overflow-x:auto}`;document.head.appendChild(st)}
+/* écran d'appel : c classe, s séance, sNom libellé, K [{k,nom,auto:{s,info,nonRecu}}], choix html du sélecteur de séance */
+function apVue(c,s,sNom,K,choix){
+  apStyle();AP_CTX={c,s,K};
+  const r=apRec(c,s),L=K.map(x=>Object.assign({},x,{st:apStatut(c,s,x.k,x.auto)}));
+  const n={p:0,a:0,i:0,ip:0,'':0};L.forEach(x=>n[x.st.s||'']++);
+  const auj=apJour(),dateTxt=r?`Appel du <b>${esc(apDateFr(r.d))}</b>${r.d!==auj?' · <span class="ap-info al">ce n’est pas aujourd’hui</span>':''}${apRecs(c,s).length>1?` · ${apRecs(c,s).length} appels pour cette séance`:''}`:`Pas encore d’appel pour cette séance : il sera daté d’aujourd’hui (${esc(apDateFr(auj))}).`;
+  const ligne=x=>{const st=x.st,sel=st.s,auto=st.src==='auto'||st.src==='ancien';
+    const info=[st.src==='auto'&&x.auto&&x.auto.info?x.auto.info:'',st.src==='ancien'?'appel d’avant la mise à jour':''].filter(Boolean).join(' · ');
+    const al=x.auto&&x.auto.nonRecu?'⚠ carnet non reçu':'';
+    const pm=[];if(sel==='p'||sel==='ip'||sel==='i'){pm.push('retard');pm.push('tenue')}if(sel==='a')pm.push('just');if(x.auto&&x.auto.nonRecu&&sel&&sel!=='a')pm.push('oubli');
+    (st.m||[]).forEach(m=>{if(!pm.includes(m))pm.push(m)});
+    return `<li class="ap-l s-${sel||'n'}"><div class="ap-n">${APA.lien(x.k,x.nom)}${info?`<span class="ap-info">${esc(info)}</span>`:''}${al?`<span class="ap-info al">${al}</span>`:''}</div>
+      <div class="ap-b" role="group" aria-label="Statut de ${esc(x.nom)}">${AP4.map(([v,l,ab])=>`<button type="button" class="${v}${sel===v&&auto?' auto':''}" data-ap="${esc(x.k)}|${v}" aria-pressed="${sel===v}" title="${l}">${ab}<small>${l}</small></button>`).join('')}</div>
+      ${pm.length?`<div class="ap-m">${pm.map(m=>`<button type="button" data-apm="${esc(x.k)}|${m}" aria-pressed="${(st.m||[]).includes(m)}">${APM[m]}</button>`).join('')}</div>`:''}</li>`};
+  return `<h2>Appel · ${esc(sNom)}</h2>${choix||''}
+   <p class="ap-date">${dateTxt}</p>
+   <div class="ap-tete"><span class="ap-cpt p">Présents ${n.p}</span><span class="ap-cpt a">Absents ${n.a}</span><span class="ap-cpt i">Inaptes ${n.i}</span><span class="ap-cpt ip">Inaptes partiels ${n.ip}</span>${n['']?`<span class="ap-cpt n">Non renseignés ${n['']}</span>`:''}</div>
+   <div class="ap-act">${n['']?`<button type="button" data-apx="tous">✓ Les ${n['']} non renseigné${n['']>1?'s':''} : présents</button>`:''}${r&&r.d!==auj&&!APA.sansRefaite?'<button type="button" class="sec" data-apx="refaite">📅 Séance refaite aujourd’hui (nouvel appel)</button>':''}<button type="button" class="sec" data-apx="csv">⬇ Exporter l’appel (CSV)</button></div>
+   <ul class="ap-liste">${L.map(ligne).join('')}</ul>
+   <p class="small muted">Touchez le statut ; touchez-le à nouveau pour l’enlever. Pointillés = statut proposé automatiquement${APA.autoTxt?' ('+APA.autoTxt+')':''} : le toucher le confirme. Absent et inapte sont toujours distincts. Tout est gardé sur l’appareil (hors connexion) et dans la sauvegarde.</p>
+   ${apRecap(c,K)}`;
+}
+/* récapitulatif du cycle pour la classe : par élève, nombre de séances par statut et précisions */
+function apRecap(c,K){
+  const B=apBase(),ids=Object.keys(B).filter(id=>id.slice(0,id.lastIndexOf('|'))===c);if(!ids.length)return '';
+  const rows=K.map(x=>{const t={a:0,i:0,ip:0,just:0,retard:0,tenue:0};ids.forEach(id=>{const s=id.slice(id.lastIndexOf('|')+1);const st=apStatut(c,s,x.k,(APA.autoDe&&APA.autoDe(x.k,s))||null);if(t[st.s]!=null&&st.s!=='p')t[st.s]++;(st.m||[]).forEach(m=>{if(t[m]!=null)t[m]++})});return [x,t]}).filter(([,t])=>Object.values(t).some(Boolean));
+  return `<details><summary><b>Récapitulatif de la classe</b> (${ids.length} séance${ids.length>1?'s':''} avec appel)</summary>${rows.length?`<div class="ap-hw"><table class="ap-hist"><tr><th>Élève</th><th>Abs.</th><th>dont just.</th><th>Inapte</th><th>Inapte part.</th><th>Retards</th><th>Tenue</th></tr>${rows.map(([x,t])=>`<tr><td>${esc(x.nom)}</td><td>${t.a||''}</td><td>${t.just||''}</td><td>${t.i||''}</td><td>${t.ip||''}</td><td>${t.retard||''}</td><td>${t.tenue||''}</td></tr>`).join('')}</table></div>`:'<p class="small">Rien à signaler : tous présents.</p>'}</details>`;
+}
+function apCSV(c){
+  const B=apBase(),L=[['Classe','Séance','Date','Élève','Statut','Précisions','Modifié le']];
+  Object.keys(B).filter(id=>id.slice(0,id.lastIndexOf('|'))===c).forEach(id=>{const s=id.slice(id.lastIndexOf('|')+1);B[id].forEach(r=>Object.entries(r.el).forEach(([k,e])=>L.push([c,APA.nomSeance?APA.nomSeance(s):s,r.d,APA.nom(k),AP4N[e.s]||'',(e.m||[]).map(m=>APM[m]).join(' + '),e.t?new Date(e.t).toLocaleString('fr-FR'):''])))});
+  const txt='﻿'+L.map(r=>r.map(v=>{v=String(v==null?'':v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(';')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));a.download='appel_'+String(c).replace(/[^\w-]+/g,'_')+'_'+apJour()+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('[data-ap],[data-apm],[data-apx]');if(!b||!AP_CTX)return;
+  e.preventDefault();e.stopPropagation();const {c,s,K}=AP_CTX;
+  if(b.dataset.ap!=null){const v=b.dataset.ap,i=v.lastIndexOf('|'),k=v.slice(0,i),val=v.slice(i+1),x=K.find(y=>y.k===k)||{},st=apStatut(c,s,k,x.auto);
+    apModifier(c,s,k,en=>{en.s=st.src==='appel'&&st.s===val?'':val;if(en.s!=='a')en.m=en.m.filter(m=>m!=='just');if(en.s==='a')en.m=en.m.filter(m=>m==='just');return en})}
+  else if(b.dataset.apm!=null){const v=b.dataset.apm,i=v.lastIndexOf('|'),k=v.slice(0,i),m=v.slice(i+1),x=K.find(y=>y.k===k)||{},st=apStatut(c,s,k,x.auto);
+    apModifier(c,s,k,en=>{if(!en.s&&st.s)en.s=st.s;const j=en.m.indexOf(m);if(j>=0)en.m.splice(j,1);else en.m.push(m);return en})}
+  else if(b.dataset.apx==='tous'){K.forEach(x=>{if(!apStatut(c,s,x.k,x.auto).s)apModifier(c,s,x.k,en=>{en.s='p';return en})})}
+  else if(b.dataset.apx==='refaite'){if(!confirm('Nouvel appel daté d’aujourd’hui pour cette séance ? L’appel précédent est gardé dans l’historique.'))return;apRefaite(c,s)}
+  else if(b.dataset.apx==='csv'){apCSV(c);return}
+  APA.sauver();APA.rendre();
+},true);
+/* ===================== fin du module Appel ===================== */
+
 function vTableau(){
   if(!DB.classe)return `<h2>Bienvenue</h2>${AVT('prof','Bienvenue ! Commence par importer la liste Pronote de ta classe.')}<p class="carte">Commencez par importer une liste Pronote (onglet Réglages), puis montrez le QR de la classe aux tablettes.</p>${carteDemo()}`;
   const L=elevesClasse(DB.classe);

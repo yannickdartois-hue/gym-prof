@@ -1,6 +1,13 @@
 /* aide.js — mode d'emploi de l'outil prof de gymnastique (lu par eps-aide.js) */
 window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 {id:'prof',titre:'Professeur',chapitres:[
+{t:'📋 Appel',html:`<ol>
+<li>Onglet <b>Appel</b> : un bouton par statut pour chaque élève — <b>P</b> présent, <b>A</b> absent, <b>I</b> inapte, <b>IP</b> inapte partiel. Absent et inapte sont toujours distincts.</li>
+<li>Toucher le statut actif l’enlève. On peut changer à tout moment pendant le cours ; « Les non renseignés : présents » complète d’un coup.</li>
+<li>Précisions cumulables : en retard, oubli de tenue, absence justifiée.</li>
+<li>En gym, la séance est la <b>date du cours</b> (aujourd’hui par défaut, ou une date passée à compléter). Un élève « Inapte partiel » ou « Dispensé du cycle » dans sa fiche est proposé inapte partiel ou inapte. L’appel ne change pas la note.</li>
+<li>Chaque appel est daté (le jour du premier appel de la séance) et gardé : changer de séance ou corriger plus tard n’efface rien. Tout reste sur l’appareil, hors connexion, et part dans la sauvegarde. « Exporter l’appel » : CSV de tout l’historique de la classe.</li>
+</ol>`},
 {t:'📷 QR du jour (niveaux ⚠️)',html:`<ol>
 <li>En gym, le QR du jour ne sert qu’aux niveaux ⚠️ : sans lui, un élève ne peut pas valider E un salto ou un niveau E/F de trampoline hors du cours. Aucun code à taper.</li>
 <li>Début de cours : <span class="bouton">▦ QR de démarrage</span>. Chaque groupe le scanne (« QR de la classe ») : la séance s’ouvre pendant 2 heures. Il apporte en même temps vos P et la liste à jour.</li>
