@@ -210,8 +210,14 @@ function cellule(E,a){const p=meilleur(E,a,'p'),e=meilleur(E,a,'e');
 const jourDe=t=>{const d=new Date(t);return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()};
 function recuEtat(E){const t=E&&(E.recu||E.maj);if(!t)return 'non';return jourDe(t)===jourDe(Date.now())?'auj':'avant'}
 function pastille(E){const s=recuEtat(E);return `<span class="pst ${s}" title="${s==='auj'?'reçu aujourd’hui':s==='avant'?'reçu un autre jour':'pas encore reçu'}"></span>`}
-function resteHTML(){if(!DB.classe)return '';const L=elevesClasse(DB.classe).filter(x=>!x.horsListe&&x.E.st!=='disp'),m=L.filter(x=>recuEtat(x.E)!=='auj');
-  return m.length?`<b>${L.length-m.length} / ${L.length} reçus aujourd’hui.</b> Il manque : ${m.map(x=>esc(x.nom)).join(', ')}`:`<b>✓ Toute la classe ${esc(DB.classe)} est reçue aujourd’hui.</b>`}
+/* v. « Encore N élèves à scanner » affiché dans le scanner, sous le nom des élèves lus (règle commune des outils prof).
+   manque : noms des élèves de la classe sans séance reçue (hors absents notés à l'appel) ; lib : « classe · séance ». */
+function resteBloc(manque,total,lib,nAbs){if(!total)return '';const s=manque.length>1?'s':'',ab=nAbs?` · ${nAbs} absent${nAbs>1?'s':''} non compté${nAbs>1?'s':''}`:'';
+  return manque.length?`<div class="scan-reste" style="background:#fff7ed;border:2px solid #fb923c;border-radius:12px;padding:8px 10px;color:#14181f;text-align:left"><b style="font-size:20px">Encore ${manque.length} élève${s} à scanner</b> <span style="font-size:14px">· ${esc(lib)}${ab}</span><div style="font-size:15px;margin-top:4px;line-height:1.35">${manque.map(esc).join(', ')}</div></div>`
+    :`<div class="scan-reste ok" style="background:#dcfce7;border:2px solid #22c55e;border-radius:12px;padding:8px 10px;color:#14532d;text-align:left"><b style="font-size:20px">✓ Toute la classe est scannée</b> <span style="font-size:14px">· ${esc(lib)}${ab}</span></div>`}
+function resteHTML(){if(!DB.classe)return '';const auj=apJour(),L=elevesClasse(DB.classe).filter(x=>!x.horsListe&&x.E.st!=='disp'),
+    abs=L.filter(x=>apStatut(DB.classe,auj,x.k,null).s==='a'),m=L.filter(x=>!abs.includes(x)&&recuEtat(x.E)!=='auj');
+  return resteBloc(m.map(x=>x.nom),L.length,DB.classe+' · aujourd’hui',abs.length)}
 /* ---------- Appel (chantier 10) : en gym, la séance est la date du cours ---------- */
 function vAppelGym(){const c=DB.classe;if(!c)return '<p class="muted">Choisissez d’abord une classe (onglet Réglages).</p>';
   const auj=apJour();let d=DB.apD&&DB.apD.c===c&&DB.apD.j===auj?DB.apD.d:auj;
