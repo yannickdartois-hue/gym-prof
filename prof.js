@@ -233,6 +233,9 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(b.dataset.apfiche!=null){DB.vue='tableau';DB.eleve=b.dataset.apfiche;rendre();scrollTo(0,0);return}
   DB.apD={c:DB.classe,d:b.dataset.apd,j:apJour()};sauver();rendre()},true);
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='ap-date'&&e.target.value){DB.apD={c:DB.classe,d:e.target.value,j:apJour()};sauver();rendre()}});
+/* lien vers le cahier de textes (résumés Pronote) de l'écran de cours du cycle */
+const CAHIER_URL='https://yannickdartois-hue.github.io/cycle-gym/index.html#cahier';
+function cahierLien(){return `<a href="${CAHIER_URL}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:12px;min-height:56px;margin:10px 0 14px;padding:10px 14px;border-radius:14px;border:2px solid #334155;background:#fff;color:#1c2128;text-decoration:none;font-weight:800;font-size:17px"><span style="font-size:24px">📋</span><span>Cahier de textes · résumés à coller dans Pronote<small style="display:block;font-weight:400;font-size:14px;color:#5b6470">Ouvre l’écran de cours du cycle (texte de chaque séance, PDF, Word)</small></span></a>`}
 /* ===================== Appel (chantier 10, 26/11/2026) =====================
    Repris du module d'appel de Demi-fond et mis à niveau. Code propre à cet outil (copie autonome).
    4 statuts exclusifs : Présent · Absent · Inapte · Inapte partiel (absent ≠ inapte, partout).
@@ -457,7 +460,7 @@ function vTableau(){
   const nAuj=L.filter(x=>!x.horsListe&&recuEtat(x.E)==='auj').length,nTot=L.filter(x=>!x.horsListe).length;
   return `<h2>Classe ${esc(DB.classe)}</h2><p class="suivi"><span class="pst auj"></span><b>${nAuj} / ${nTot}</b> reçus aujourd’hui <span class="pst avant"></span>un autre jour <span class="pst non"></span>pas encore reçu</p>
   <p class="small muted">Lettre = meilleur niveau validé <b>P</b> par atelier · petite lettre en pointillés = niveau plus haut validé seulement <b>E</b> par un camarade (à confirmer). Touchez un élève pour sa fiche.</p>
-  ${basculeVue()}
+  ${basculeVue()}${cahierLien()}
   <div class="rangee"><button class="bt mini" type="button" data-act="qrclasse">▦ QR de la classe</button><button class="bt mini" type="button" data-act="rotation">🔄 Rotation des ateliers</button><button class="bt mini" type="button" data-act="csv">⬇ Export CSV (note)</button><button class="bt mini" type="button" data-act="pronote">📋 Notes pour Pronote</button><button class="bt mini" type="button" data-act="imprimer">🖨 Imprimer</button></div>
   <div style="overflow-x:auto;margin-top:10px"><table class="tab"><thead><tr><th style="text-align:left">Élève</th>${GYM.ateliers.map(a=>`<th title="${esc(a.nom)}" style="box-shadow:inset 0 -8px 0 ${COUL[a.n]}">${a.n}<br><span class="small">${esc(a.court)}</span></th>`).join('')}<th>Items<br><span class="small">/16</span></th><th>Part.<br><span class="small">/4</span></th><th>Note<br><span class="small">/20</span></th></tr></thead>
   <tbody>${L.map(x=>{const N=note(x.E,DB.classe);return `<tr data-act="eleve" data-v="${esc(x.k)}"><td style="text-align:left">${pastille(x.E)}<b>${esc(x.nom)}</b>${rafale(x.E)?' <span title="Plusieurs validations E en quelques minutes : à vérifier">⚡</span>':''}${x.horsListe?' <span class="small muted">(hors liste)</span>':''}${x.E.st==='disp'?' <span class="small muted">(dispensé)</span>':x.E.st==='ip'?' <span class="small muted">(inapte partiel)</span>':''}${x.E.maj?`<br><span class="small muted">reçu ${dateFr(x.E.maj)}</span>`:''}</td>${GYM.ateliers.map(a=>cellule(x.E,a.n)).join('')}<td>${fmt(N.items)}</td><td>${fmt(N.part)}${N.partAuto?'<sup title="proposée par l’appli">*</sup>':''}</td><td><b>${fmt(N.total)}</b></td></tr>`}).join('')}</tbody></table></div>
