@@ -2,7 +2,7 @@
 window.EPS_AIDE={appli:'Gymnastique · Prof',bouton:false,publics:[
 {id:'prof',titre:'Professeur',chapitres:[
 {t:'📋 Appel',html:`<ol>
-<li>Onglet <b>Appel</b> : un bouton par statut pour chaque élève — <b>P</b> présent, <b>A</b> absent, <b>I</b> inapte, <b>IP</b> inapte partiel. Absent et inapte sont toujours distincts.</li>
+<li>Onglet <b>Appel</b> : tout le monde est présent par défaut. <b>Touche un nom</b> : Absent → Inapte → Inapte partiel → Présent (rouge, orange, jaune). <b>Appui long</b> sur un nom : précisions (retard, oubli de tenue, absence justifiée, oubli d’envoi) et fiche de l’élève. « ✓ Appel terminé » enregistre les présents. Pointillés = statut proposé d’après ce qui est reçu. Absent et inapte sont toujours distincts.</li>
 <li>Toucher le statut actif l’enlève. On peut changer à tout moment pendant le cours ; « Les non renseignés : présents » complète d’un coup.</li>
 <li>Précisions cumulables : en retard, oubli de tenue, absence justifiée.</li>
 <li>En gym, la séance est la <b>date du cours</b> (aujourd’hui par défaut, ou une date passée à compléter). Un élève « Inapte partiel » ou « Dispensé du cycle » dans sa fiche est proposé inapte partiel ou inapte. L’appel ne change pas la note.</li>
